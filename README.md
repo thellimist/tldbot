@@ -154,8 +154,6 @@ Optional config file:
 tldbot --config ./tldbot.config.json search tldscout
 ```
 
-Example config file lives at `./tldbot.config.example.json`.
-
 Use config only when you need to override defaults, such as:
 
 - pricing backend URL/token
