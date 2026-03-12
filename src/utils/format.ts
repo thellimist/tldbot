@@ -8,7 +8,7 @@ import type {
 } from '../types.js';
 import { CLI_COMMAND } from './cli-command.js';
 
-type OutputFormat = Config['outputFormat'];
+type OutputFormat = 'table' | 'json' | 'both';
 
 type ToolResult =
   | SearchResponse
@@ -215,6 +215,128 @@ function formatSmartSuggestions(result: {
   return sections.join('\n');
 }
 
+function formatAnalyzeProject(result: {
+  project: {
+    name: string;
+    description?: string;
+    keywords: string[];
+    detected_industry?: string;
+    source: 'local' | 'github';
+    repository_url?: string;
+  };
+  extracted_from: string[];
+  insights: string[];
+  warnings: string[];
+  suggestions?: {
+    available: Array<{
+      domain: string;
+      available: boolean;
+      score: number;
+      source: string;
+    }>;
+    premium: Array<{
+      domain: string;
+      available: boolean;
+      score: number;
+      source: string;
+    }>;
+    unavailable_count: number;
+  };
+}): string {
+  const sections: string[] = [];
+
+  sections.push(`Project: ${result.project.name}`);
+  sections.push(`Source: ${result.project.source}`);
+
+  if (result.project.description) {
+    sections.push(`Description: ${result.project.description}`);
+  }
+
+  if (result.project.detected_industry) {
+    sections.push(`Industry: ${result.project.detected_industry}`);
+  }
+
+  if (result.project.keywords.length > 0) {
+    sections.push(`Keywords: ${result.project.keywords.join(', ')}`);
+  }
+
+  if (result.extracted_from.length > 0) {
+    sections.push(`Extracted from: ${result.extracted_from.join(', ')}`);
+  }
+
+  if (result.suggestions?.available.length) {
+    sections.push('\nSuggestions');
+    sections.push(
+      renderTable(
+        ['Domain', 'Score', 'Source'],
+        result.suggestions.available.slice(0, 5).map((entry) => [
+          entry.domain,
+          String(entry.score),
+          entry.source,
+        ]),
+      ),
+    );
+  }
+
+  if (result.warnings.length > 0) {
+    sections.push(`\nWarnings: ${result.warnings.join(' | ')}`);
+  }
+
+  if (result.insights.length > 0) {
+    sections.push(`\nInsights: ${result.insights.join(' | ')}`);
+  }
+
+  return sections.join('\n');
+}
+
+function formatHuntDomains(result: {
+  results: Array<{
+    domain: string;
+    tld: string;
+    available: boolean;
+    investment_score: {
+      total: number;
+      grade: string;
+    };
+    source: string;
+    aftermarket?: {
+      price: number | null;
+      currency: string | null;
+    };
+  }>;
+  summary: {
+    total_scanned: number;
+    results_count: number;
+  };
+  insights: string[];
+}): string {
+  const sections: string[] = [];
+
+  sections.push(
+    `Hunt summary: ${result.summary.results_count} results from ${result.summary.total_scanned} scanned`,
+  );
+
+  if (result.results.length > 0) {
+    sections.push(
+      renderTable(
+        ['Domain', 'Score', 'Grade', 'Source'],
+        result.results.slice(0, 10).map((entry) => [
+          `${entry.domain}.${entry.tld}`,
+          String(entry.investment_score.total),
+          entry.investment_score.grade,
+          entry.source,
+        ]),
+      ),
+    );
+  }
+
+  if (result.insights.length > 0) {
+    sections.push(`\nInsights: ${result.insights.join(' | ')}`);
+  }
+
+  return sections.join('\n');
+}
+
 function formatTldInfo(result: TLDInfo): string {
   const headers = ['Field', 'Value'];
   const rows = [
@@ -373,6 +495,59 @@ export function formatToolResult(
       break;
     case 'check_socials':
       text = formatSocials(typed as { name: string; results: SocialHandleResult[]; insights?: string[] });
+      break;
+    case 'analyze_project':
+      text = formatAnalyzeProject(typed as {
+        project: {
+          name: string;
+          description?: string;
+          keywords: string[];
+          detected_industry?: string;
+          source: 'local' | 'github';
+          repository_url?: string;
+        };
+        extracted_from: string[];
+        insights: string[];
+        warnings: string[];
+        suggestions?: {
+          available: Array<{
+            domain: string;
+            available: boolean;
+            score: number;
+            source: string;
+          }>;
+          premium: Array<{
+            domain: string;
+            available: boolean;
+            score: number;
+            source: string;
+          }>;
+          unavailable_count: number;
+        };
+      });
+      break;
+    case 'hunt_domains':
+      text = formatHuntDomains(typed as {
+        results: Array<{
+          domain: string;
+          tld: string;
+          available: boolean;
+          investment_score: {
+            total: number;
+            grade: string;
+          };
+          source: string;
+          aftermarket?: {
+            price: number | null;
+            currency: string | null;
+          };
+        }>;
+        summary: {
+          total_scanned: number;
+          results_count: number;
+        };
+        insights: string[];
+      });
       break;
     default:
       text = `Output format not implemented for ${name}. Set OUTPUT_FORMAT=json for raw output.`;

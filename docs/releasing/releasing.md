@@ -22,6 +22,15 @@ Tagging `vX.Y.Z` triggers:
 - npm publish via `.github/workflows/publish.yml`
 - Homebrew formula update via `.github/workflows/homebrew-tap.yml`
 
+## npm
+
+npm publishing uses Trusted Publishing through GitHub Actions.
+
+That means:
+- no `NPM_TOKEN`
+- GitHub Actions must keep `id-token: write`
+- the npm package must trust `thellimist/tldbot` workflow `publish.yml`
+
 ## Homebrew
 
 Homebrew automation expects:

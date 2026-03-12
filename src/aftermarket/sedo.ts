@@ -9,6 +9,9 @@ import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { TtlCache } from '../utils/cache.js';
 
+const SEDO_FEED_URL = 'https://sedo.com/txt/auctions_us.txt';
+const SEDO_FEED_CACHE_TTL_SECONDS = 3600;
+
 export type SedoAuctionListing = {
   domain: string;
   price: number | null;
@@ -21,7 +24,7 @@ export type SedoAuctionListing = {
 type SedoIndex = Map<string, SedoAuctionListing>;
 
 const FEED_CACHE_KEY = 'sedo:auctions';
-const feedCache = new TtlCache<SedoIndex>(config.cache.sedoTtl, 2);
+const feedCache = new TtlCache<SedoIndex>(SEDO_FEED_CACHE_TTL_SECONDS, 2);
 
 function normalizeCurrency(raw: string): string | null {
   if (!raw) return null;
@@ -77,8 +80,7 @@ async function fetchSedoFeed(): Promise<SedoIndex> {
   const cached = feedCache.get(FEED_CACHE_KEY);
   if (cached) return cached;
 
-  const url =
-    config.aftermarket.sedoFeedUrl || 'https://sedo.com/txt/auctions_us.txt';
+  const url = SEDO_FEED_URL;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
 

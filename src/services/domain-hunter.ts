@@ -415,7 +415,7 @@ export async function huntDomains(criteria: HuntCriteria): Promise<HuntDomainsRe
   // ========================================
   if (includeAftermarket && config.aftermarket.sedoEnabled) {
     try {
-      const feedUrl = config.aftermarket.sedoFeedUrl || 'https://sedo.com/txt/auctions_us.txt';
+      const feedUrl = 'https://sedo.com/txt/auctions_us.txt';
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
 

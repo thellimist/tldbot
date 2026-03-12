@@ -13,7 +13,6 @@ import { analyzeProject, type ProjectAnalysisResult } from '../services/project-
 import { executeSuggestDomainsSmart } from './suggest_domains_smart.js';
 import { wrapError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import type { QwenContext } from '../services/qwen-inference.js';
 
 /**
  * Input schema for analyze_project.
@@ -216,20 +215,10 @@ export async function executeAnalyzeProject(
 
       const query = queryParts.join(' ');
 
-      // Build context for Qwen
-      const context: QwenContext = {
-        projectName: analysis.project.name,
-        description: analysis.project.description,
-        industry: analysis.project.industry,
-        keywords: analysis.project.keywords,
-        brandWords: analysis.project.brandWords,
-        repositoryUrl: analysis.project.repositoryUrl,
-      };
-
       logger.debug('Generating domain suggestions with context', {
         query,
-        industry: context.industry,
-        keywords: context.keywords?.length || 0,
+        industry: analysis.project.industry,
+        keywords: analysis.project.keywords.length,
       });
 
       try {
@@ -237,7 +226,7 @@ export async function executeAnalyzeProject(
         const suggestResult = await executeSuggestDomainsSmart({
           query,
           tld,
-          industry: context.industry as 'tech' | 'startup' | 'finance' | 'health' | 'food' | 'creative' | 'ecommerce' | 'education' | 'gaming' | 'social' | undefined,
+          industry: analysis.project.industry as 'tech' | 'startup' | 'finance' | 'health' | 'food' | 'creative' | 'ecommerce' | 'education' | 'gaming' | 'social' | undefined,
           style,
           max_suggestions,
           include_premium: false,

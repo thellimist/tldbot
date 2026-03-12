@@ -13,12 +13,12 @@ describe('formatToolResult', () => {
       currency: 'USD',
       privacy_included: true,
       transfer_price: null,
-      registrar: 'porkbun',
-      checkout_url: 'https://porkbun.com/checkout/search?q=example.com',
+      registrar: 'namecheap',
+      checkout_url: 'https://www.namecheap.com/domains/registration/results/?domain=example.com',
       source: 'pricing_api',
       checked_at: new Date().toISOString(),
       pricing_status: 'ok',
-      price_check_url: 'https://porkbun.com/checkout/search?q=example.com',
+      price_check_url: 'https://www.namecheap.com/domains/registration/results/?domain=example.com',
       aftermarket: {
         type: 'auction',
         price: null,
@@ -42,7 +42,7 @@ describe('formatToolResult', () => {
 
     expect(text).toContain('| Domain | Status | Where |');
     expect(text).toContain('Available');
-    expect(text).toContain('porkbun');
+    expect(text).toContain('namecheap');
     expect(text).toContain('Non-verified: example.io');
     expect(text).toContain('Next commands');
     expect(text).toContain('tldbot buy example.com --registrar namecheap');

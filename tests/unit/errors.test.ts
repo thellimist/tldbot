@@ -77,15 +77,15 @@ describe('UnsupportedTldError', () => {
 
 describe('RateLimitError', () => {
   it('should create with registrar name', () => {
-    const error = new RateLimitError('porkbun');
+    const error = new RateLimitError('godaddy');
 
     expect(error.code).toBe('RATE_LIMIT');
-    expect(error.message).toContain('porkbun');
+    expect(error.message).toContain('godaddy');
     expect(error.retryable).toBe(true);
   });
 
   it('should include retry-after time', () => {
-    const error = new RateLimitError('porkbun', 30);
+    const error = new RateLimitError('godaddy', 30);
 
     expect(error.suggestedAction).toContain('30 seconds');
     expect(error.retryAfter).toBeDefined();
@@ -102,14 +102,14 @@ describe('RegistrarApiError', () => {
   });
 
   it('should be retryable for server errors', () => {
-    const error = new RegistrarApiError('porkbun', 'Server error', 503);
+    const error = new RegistrarApiError('godaddy', 'Server error', 503);
 
     expect(error.retryable).toBe(true);
     expect(error.statusCode).toBe(503);
   });
 
   it('should not be retryable for client errors', () => {
-    const error = new RegistrarApiError('porkbun', 'Bad request', 400);
+    const error = new RegistrarApiError('godaddy', 'Bad request', 400);
 
     expect(error.retryable).toBe(false);
     expect(error.statusCode).toBe(400);
@@ -118,10 +118,10 @@ describe('RegistrarApiError', () => {
 
 describe('AuthenticationError', () => {
   it('should create with registrar name', () => {
-    const error = new AuthenticationError('porkbun');
+    const error = new AuthenticationError('godaddy');
 
     expect(error.code).toBe('AUTH_ERROR');
-    expect(error.message).toContain('porkbun');
+    expect(error.message).toContain('godaddy');
     expect(error.suggestedAction).toContain('config file');
   });
 });
@@ -129,13 +129,13 @@ describe('AuthenticationError', () => {
 describe('NoSourceAvailableError', () => {
   it('should list tried sources', () => {
     const error = new NoSourceAvailableError('example.com', [
-      'porkbun',
+      'godaddy',
       'rdap',
       'whois',
     ]);
 
     expect(error.code).toBe('NO_SOURCE_AVAILABLE');
-    expect(error.message).toContain('porkbun');
+    expect(error.message).toContain('godaddy');
     expect(error.message).toContain('rdap');
     expect(error.message).toContain('whois');
     expect(error.retryable).toBe(true);

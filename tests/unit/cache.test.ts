@@ -87,8 +87,8 @@ describe('TtlCache', () => {
 
 describe('Cache Key Generators', () => {
   it('should generate domain cache keys', () => {
-    expect(domainCacheKey('vibecoding.com', 'porkbun')).toBe(
-      'domain:vibecoding.com:porkbun',
+    expect(domainCacheKey('vibecoding.com', 'pricing_api')).toBe(
+      'domain:vibecoding.com:pricing_api',
     );
     expect(domainCacheKey('TEST.IO', 'rdap')).toBe('domain:test.io:rdap');
   });

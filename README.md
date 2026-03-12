@@ -1,128 +1,68 @@
+<p align="center">
+  <img src="assets/banner.png" alt="tldbot banner" width="100%">
+</p>
+
 # tldbot
 
-CLI-first domain finder for AI agents.
+CLI-first domain finder for AI agents like Claude Code and Codex.
 
-`tldbot` checks domain availability, distinguishes `available` vs `for_sale` vs `taken`, can verify a focused set of social handles, and gives the next buy command to run.
+1. Skill to help find domains
+2. Check domain availability
+3. Check social handles
+4. Guide buying from correct registrar
+
+Supports both CLI and MCP
 
 ## Install
 
-One-off CLI:
+Recommended
 
 ```bash
+# Inside Claude Code or Codex, prompt
+curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/SKILL.md and download tldbot
+```
+
+Others
+
+```bash
+# One-off CLI:
 npx -y tldbot@latest --help
-```
 
-Global CLI:
-
-```bash
+# Global CLI:
 npm install -g tldbot
-```
 
-Homebrew:
-
-```bash
+# Homebrew:
 brew install thellimist/tap/tldbot
 ```
 
-Install the interactive domain-selection skill into Codex:
-
-```bash
-mkdir -p ~/.codex/skills/tldbot-domain-selector
-curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/SKILL.md \
-  -o ~/.codex/skills/tldbot-domain-selector/SKILL.md
-```
-
-For Claude Code or any AGENTS-based setup, append the fallback snippet:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/references/agents-snippet.md >> AGENTS.md
-```
-
-Then use `tldbot` to find a domain.
-
-The skill is interactive by design:
-- it starts with lots of naming options
-- narrows only after you react
-- uses fast search first on hot TLDs
-- verifies only the shortlist
-- social-checks and buy commands come last
-
-## What It Is
-
-- local-first CLI
-- stdio MCP server from the same runtime
-- public-infra domain search: RDAP, WHOIS, DNS nameserver fingerprints
-- simple output built for terminals and agent transcripts
-- installable agent skill for interactive domain selection
-
 ## Core Commands
 
-Show help:
-
 ```bash
+# Search default TLDs:
+tldbot search mydomain
+
+# Search multiple names:
+tldbot search mydomain namecli domscout --tlds com,io,dev,app,co
+
+# Search custom TLDs:
+tldbot search mydomain --tlds com,io,dev,app,co,net,ai,sh,so,bot
+
+# Verify hot TLDs explicitly:
+tldbot search mydomain --tlds io,sh,bot --verify
+
+# Check socials:
+tldbot check_socials mydomain
+
+# Show buy commands:
+tldbot buy mydomain.com
+
+# Show buy commands with pricing context:
+tldbot buy mydomain.com --price
+
+# Show help:
 tldbot --help
-tldbot help search
-tldbot help skills
+tldbot skills
 ```
-
-Show version:
-
-```bash
-tldbot --version
-```
-
-Search default TLDs:
-
-```bash
-tldbot search tldscout
-```
-
-Search custom TLDs:
-
-```bash
-tldbot search tldscout --tlds com,io,dev,app,co,net,ai,sh,so,bot
-```
-
-Verify hot TLDs explicitly:
-
-```bash
-tldbot search tldscout --tlds io,sh,bot --verify
-```
-
-Search multiple names:
-
-```bash
-tldbot search tldscout namecli domscout --tlds com,io,dev,app,co
-```
-
-Check socials:
-
-```bash
-tldbot check_socials tldscout
-```
-
-Show buy commands:
-
-```bash
-tldbot buy tldscout.com
-```
-
-Show buy commands with pricing context:
-
-```bash
-tldbot buy tldscout.com --price
-```
-
-## Interactive Domain Workflow
-
-Use the skill when you want the agent to:
-- generate a lot of options first
-- narrow gradually
-- run fast searches before strict verification
-- only social-check and buy after a shortlist exists
-
-Read the full guide:
-- [domain-selection.md](/Users/kan/Projects/code/domain-search-mcp/docs/domain-selection/domain-selection.md)
 
 ## How Search Works
 
@@ -146,21 +86,19 @@ Verification states:
 
 ## Config
 
-No `.env`.
-
-Optional config file:
+Optional. Most users do not need this.
+`--config` means: use this JSON settings file for this run.
 
 ```bash
 tldbot --config ./tldbot.config.json search tldscout
 ```
 
-Use config only when you need to override defaults, such as:
-
-- pricing backend URL/token
-- Porkbun / Namecheap credentials
-- custom Qwen endpoint
-- default TLDs
-- output format
+```json
+{
+  "defaultSearchTlds": ["com", "io", "dev", "app", "co", "net", "ai", "sh", "so"],
+  "allowedTlds": ["com", "io", "dev", "app", "co", "net", "org", "xyz", "ai", "sh", "so", "tools", "studio", "company", "me", "cc", "bot"]
+}
+```
 
 ## Cache
 
@@ -210,19 +148,6 @@ With a config file:
   }
 }
 ```
-
-## What Changed
-
-- package renamed to `tldbot`
-- CLI/MCP only
-- no HTTP/OpenAPI transport
-- no `.env` flow
-- no hosted negative-cache backend
-- no training assets in this repo
-- no Glama / Context7 listing metadata
-- persistent 24h local cache in `~/.tldbot/`
-- installable domain-selection skill
-- Homebrew tap automation
 
 ## Development
 

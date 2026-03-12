@@ -9,7 +9,7 @@ describe('resolveDirectCliSearchCommand', () => {
       '--tlds',
       'com,io,dev',
       '--registrars',
-      'porkbun,namecheap',
+      'godaddy,namecheap',
       '--json',
     ]);
 
@@ -18,7 +18,7 @@ describe('resolveDirectCliSearchCommand', () => {
       input: {
         domain_name: 'tldscout',
         tlds: ['com', 'io', 'dev'],
-        registrars: ['porkbun', 'namecheap'],
+        registrars: ['godaddy', 'namecheap'],
         verification_mode: 'smart',
       },
       output: 'json',
@@ -55,6 +55,15 @@ describe('resolveDirectCliSearchCommand', () => {
     expect(result).toEqual({
       command: 'help',
       topic: 'skills',
+      output: 'table',
+    });
+  });
+
+  it('parses skills command directly', () => {
+    const result = resolveDirectCliSearchCommand(['skills']);
+
+    expect(result).toEqual({
+      command: 'skills',
       output: 'table',
     });
   });

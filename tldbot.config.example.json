@@ -1,45 +1,17 @@
 {
-  "logLevel": "info",
   "defaultSearchTlds": ["com", "io", "dev", "app", "co", "net", "ai", "sh", "so"],
   "allowedTlds": ["com", "io", "dev", "app", "co", "net", "org", "xyz", "ai", "sh", "so", "tools", "studio", "company", "me", "cc", "bot"],
   "pricingApi": {
     "baseUrl": "https://your-backend.example.com",
     "token": "optional-token",
-    "timeoutMs": 2500,
-    "maxQuotesPerSearch": 0,
-    "maxQuotesPerBulk": 0,
-    "concurrency": 8,
-    "enabled": true
-  },
-  "porkbun": {
-    "apiKey": "",
-    "apiSecret": "",
-    "enabled": false
-  },
-  "namecheap": {
-    "apiKey": "",
-    "apiUser": "",
-    "clientIp": "",
-    "enabled": false
-  },
-  "qwenInference": {
-    "endpoint": "http://95.111.240.197:8000",
-    "apiKey": "",
-    "timeoutMs": 15000,
-    "maxRetries": 2,
     "enabled": true
   },
   "cache": {
-    "availabilityTtl": 86400,
-    "pricingTtl": 3600,
-    "sedoTtl": 3600
+    "availabilityTtl": 86400
   },
   "aftermarket": {
     "sedoEnabled": true,
-    "sedoFeedUrl": "https://sedo.com/txt/auctions_us.txt",
-    "nsEnabled": true,
-    "nsCacheTtl": 300,
-    "nsTimeoutMs": 1500
+    "nsEnabled": true
   },
   "checkout": {
     "enabled": true,

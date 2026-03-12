@@ -9,8 +9,10 @@
     "tldbot": "bin/tldbot"
   },
   "files": [
+    "assets/",
     "bin/",
     "dist/",
+    "skills/",
     "README.md",
     "LICENSE",
     "tldbot.config.example.json"

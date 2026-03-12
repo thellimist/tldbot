@@ -11,6 +11,10 @@ import { AdaptiveConcurrencyLimiter } from '../utils/adaptive-concurrency.js';
 import { TtlCache } from '../utils/cache.js';
 import type { PricingStatus } from '../types.js';
 
+const PRICING_API_TIMEOUT_MS = 2500;
+const PRICING_API_CONCURRENCY = 8;
+const PRICING_CACHE_TTL_SECONDS = 3600;
+
 export type PricingQuote = {
   registrar: string;
   available: boolean | null;
@@ -57,8 +61,8 @@ export type PricingCompareResponse = {
 const pricingLimiter = new AdaptiveConcurrencyLimiter({
   name: 'pricing_api',
   minConcurrency: 2,
-  maxConcurrency: config.pricingApi.concurrency * 2, // Allow scaling up to 2x config
-  initialConcurrency: config.pricingApi.concurrency,
+  maxConcurrency: PRICING_API_CONCURRENCY * 2,
+  initialConcurrency: PRICING_API_CONCURRENCY,
   errorThreshold: 0.1,            // 10% error rate triggers decrease
   latencyThresholdMs: 3000,       // Pricing API can be slow, 3s threshold
   windowMs: 60_000,               // 1 minute window (less traffic than RDAP)
@@ -66,7 +70,7 @@ const pricingLimiter = new AdaptiveConcurrencyLimiter({
   evaluationIntervalMs: 15_000,   // Evaluate every 15 seconds
 });
 const pricingCache = new TtlCache<PricingQuoteResponse>(
-  config.cache.pricingTtl,
+  PRICING_CACHE_TTL_SECONDS,
   5000,
 );
 
@@ -133,7 +137,7 @@ export async function fetchPricingQuote(
       const { ok, json } = await fetchJson(
         `${baseUrl}/api/quote`,
         { fqdn },
-        config.pricingApi.timeoutMs,
+        PRICING_API_TIMEOUT_MS,
       );
 
       if (!json || typeof json !== 'object') {
@@ -178,7 +182,7 @@ export async function fetchPricingCompare(
           tld,
           registrars: registrars && registrars.length > 0 ? registrars : undefined,
         },
-        config.pricingApi.timeoutMs,
+        PRICING_API_TIMEOUT_MS,
       );
 
       if (!json || typeof json !== 'object') {

@@ -2,10 +2,8 @@
  * Domain Search Service.
  *
  * Orchestrates domain availability checks across multiple sources:
- * 1. Porkbun (if configured - has pricing, most reliable)
- * 2. Namecheap (if configured - has pricing)
- * 3. RDAP (free public source, no pricing)
- * 4. WHOIS (strict verification only where needed)
+ * 1. RDAP (free public source, no pricing)
+ * 2. WHOIS (strict verification only where needed)
  *
  * Handles:
  * - Smart source selection based on availability and configuration
@@ -13,8 +11,6 @@
  * - Caching for performance
  * - Insights generation for vibecoding UX
  *
- * Note: Porkbun API is the primary source when configured as it provides
- * accurate availability AND pricing in a single call.
  */
 
 import type {
@@ -38,8 +34,6 @@ import {
 import { domainCache, domainCacheKey } from '../utils/cache.js';
 import { ConcurrencyLimiter } from '../utils/concurrency.js';
 import {
-  porkbunAdapter,
-  namecheapAdapter,
   godaddyPublicAdapter,
 } from '../registrars/index.js';
 import { checkRdap, isRdapAvailable } from '../fallbacks/rdap.js';
@@ -75,6 +69,8 @@ const SEARCH_HIGH_PRESSURE_CONCURRENCY = 3;
 const BULK_CONCURRENCY = 20;
 const CACHE_TTL_AVAILABLE_MS = config.cache.availabilityTtl * 1000;
 const CACHE_TTL_TAKEN_MS = config.cache.availabilityTtl * 2000;
+const DEFAULT_PRICING_BUDGET = 0;
+const BULK_PRICING_BUDGET = 0;
 
 type PricingOptions = {
   enabled: boolean;
@@ -114,7 +110,7 @@ function formatDomainCheckError(
 
 function createPricingBudget(options?: PricingOptions): PricingBudget {
   const enabled = options?.enabled ?? config.pricingApi.enabled;
-  const maxQuotes = options?.maxQuotes ?? config.pricingApi.maxQuotesPerSearch;
+  const maxQuotes = options?.maxQuotes ?? DEFAULT_PRICING_BUDGET;
   const unlimited = enabled && maxQuotes <= 0;
   let remaining = enabled ? Math.max(0, maxQuotes) : 0;
   return {
@@ -135,8 +131,6 @@ function buildRegistrarPriceUrl(
 ): string | null {
   const normalized = registrar ? registrar.toLowerCase() : 'unknown';
   switch (normalized) {
-    case 'porkbun':
-      return `https://porkbun.com/checkout/search?q=${encodeURIComponent(domain)}`;
     case 'namecheap':
       return `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain)}`;
     case 'godaddy':
@@ -257,7 +251,7 @@ function applyPricingMetadata(result: DomainResult): void {
       (!result.registrar || result.registrar === 'unknown')
     ) {
       result.price_check_url =
-        buildRegistrarPriceUrl('porkbun', result.domain) || undefined;
+        buildRegistrarPriceUrl('namecheap', result.domain) || undefined;
     } else {
       result.price_check_url =
         buildRegistrarPriceUrl(result.registrar, result.domain) || undefined;
@@ -419,8 +413,6 @@ async function searchSingleDomain(
 
   // Check cache first
   for (const source of [
-    'porkbun_api',
-    'namecheap_api',
     'godaddy_api',
     'pricing_api',
     'rdap',
@@ -471,9 +463,7 @@ async function searchSingleDomain(
         retryable: wrapped.retryable,
       });
 
-      // If it's not retryable, skip similar sources
-      if (!wrapped.retryable && source === 'porkbun') {
-        // Skip other registrar APIs, go straight to fallbacks
+      if (!wrapped.retryable) {
         continue;
       }
     }
@@ -487,36 +477,15 @@ async function searchSingleDomain(
  * Build the priority list of sources to try.
  *
  * Priority order:
- * 1. Preferred registrars (if specified)
- * 2. Porkbun (has pricing, best API)
- * 3. Namecheap (has pricing)
- * 4. RDAP (free, no pricing, fast)
- * 5. WHOIS (verification only; slower and more rate-limit sensitive)
+ * 1. RDAP (free, no pricing, fast)
+ * 2. WHOIS (verification only; slower and more rate-limit sensitive)
  */
 function buildSourcePriority(
   tld: string,
-  preferredRegistrars?: string[],
+  _preferredRegistrars?: string[],
   verificationMode: VerificationMode = 'smart',
 ): string[] {
   const sources: string[] = [];
-  const allowLocalRegistrars = !config.pricingApi.enabled;
-
-  // Add preferred registrars first
-  if (allowLocalRegistrars && preferredRegistrars && preferredRegistrars.length > 0) {
-    for (const registrar of preferredRegistrars) {
-      if (registrar === 'porkbun' && config.porkbun.enabled) {
-        sources.push('porkbun');
-      } else if (registrar === 'namecheap' && config.namecheap.enabled) {
-        sources.push('namecheap');
-      } else if (registrar === 'godaddy' && godaddyPublicAdapter.isEnabled()) {
-        sources.push('godaddy');
-      }
-    }
-  } else if (allowLocalRegistrars) {
-    // Default priority: Porkbun first (best API with pricing), then Namecheap
-    if (config.porkbun.enabled) sources.push('porkbun');
-    if (config.namecheap.enabled) sources.push('namecheap');
-  }
 
   // Always add fallbacks in order: RDAP → optional WHOIS
   if (isRdapAvailable(tld)) sources.push('rdap');
@@ -542,12 +511,6 @@ async function trySource(
   verificationMode: VerificationMode = 'smart',
 ): Promise<DomainResult | null> {
   switch (source) {
-    case 'porkbun':
-      return porkbunAdapter.search(domain, tld);
-
-    case 'namecheap':
-      return namecheapAdapter.search(domain, tld);
-
     case 'godaddy':
       return godaddyPublicAdapter.search(domain, tld);
 
@@ -706,15 +669,6 @@ async function applyPricingQuote(
   result: DomainResult,
   pricingBudget?: PricingBudget,
 ): Promise<void> {
-  if (result.source === 'porkbun_api' || result.source === 'namecheap_api') {
-    result.pricing_source = result.source as PricingSource;
-    result.pricing_status = result.price_first_year !== null ? 'ok' : 'partial';
-    applyPricingMetadata(result);
-    await applyAftermarketFallback(result);
-    finalizeDomainResult(result);
-    return;
-  }
-
   if (!pricingBudget?.enabled) {
     applyPublicPriceEstimate(result);
     if (!result.pricing_status) {
@@ -989,17 +943,7 @@ function generateNextSteps(
 }
 
 function getDefaultComparisonRegistrars(): string[] {
-  const registrars: string[] = [];
-
-  if (config.porkbun.enabled) {
-    registrars.push('porkbun');
-  }
-
-  if (config.namecheap.enabled) {
-    registrars.push('namecheap');
-  }
-
-  return registrars;
+  return [];
 }
 
 async function detectDomainMarketState(
@@ -1033,7 +977,7 @@ export async function bulkSearchDomains(
   const results: DomainResult[] = [];
   const pricingBudget = createPricingBudget({
     enabled: config.pricingApi.enabled,
-    maxQuotes: config.pricingApi.maxQuotesPerBulk,
+    maxQuotes: BULK_PRICING_BUDGET,
   });
   const estimate = estimateBulkDuration(
     domains.length,

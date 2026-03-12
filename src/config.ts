@@ -18,35 +18,13 @@ type DeepPartial<T> = {
     : T[K];
 };
 
-const DEFAULT_QWEN_ENDPOINT = 'http://95.111.240.197:8000';
-
 export const DEFAULT_CONFIG: Config = {
-  porkbun: {
-    enabled: false,
-  },
-  namecheap: {
-    enabled: false,
-  },
   pricingApi: {
     enabled: false,
-    timeoutMs: 2500,
-    maxQuotesPerSearch: 0,
-    maxQuotesPerBulk: 0,
-    concurrency: 8,
   },
-  qwenInference: {
-    endpoint: DEFAULT_QWEN_ENDPOINT,
-    enabled: true,
-    timeoutMs: 15000,
-    maxRetries: 2,
-  },
-  logLevel: 'info',
   cache: {
     availabilityTtl: 86400,
-    pricingTtl: 3600,
-    sedoTtl: 3600,
   },
-  rateLimitPerMinute: 60,
   defaultSearchTlds: ['com', 'io', 'dev', 'app', 'co', 'net', 'ai', 'sh', 'so'],
   allowedTlds: [
     'com',
@@ -67,15 +45,9 @@ export const DEFAULT_CONFIG: Config = {
     'cc',
     'bot',
   ],
-  denyTlds: ['localhost', 'internal', 'test', 'local'],
-  dryRun: false,
-  outputFormat: 'table',
   aftermarket: {
     sedoEnabled: true,
-    sedoFeedUrl: 'https://sedo.com/txt/auctions_us.txt',
     nsEnabled: true,
-    nsCacheTtl: 300,
-    nsTimeoutMs: 1500,
   },
   checkout: {
     enabled: true,
@@ -138,7 +110,6 @@ function mergeDeep<T extends object>(base: T, override: DeepPartial<T> | undefin
 
 function parseCheckoutRegistrar(value: unknown): CheckoutRegistrar {
   switch (String(value || '').toLowerCase()) {
-    case 'porkbun':
     case 'cloudflare':
     case 'godaddy':
       return String(value).toLowerCase() as CheckoutRegistrar;
@@ -227,35 +198,14 @@ function loadConfigOverrides(): DeepPartial<Config> {
 }
 
 function finalizeConfig(input: Config): Config {
-  const qwenConfig = input.qwenInference || DEFAULT_CONFIG.qwenInference!;
-  const porkbunEnabled =
-    input.porkbun.enabled ?? Boolean(input.porkbun.apiKey && input.porkbun.apiSecret);
-  const namecheapEnabled =
-    input.namecheap.enabled ?? Boolean(input.namecheap.apiKey && input.namecheap.apiUser);
   const pricingApiBaseUrl = validateExternalUrl(input.pricingApi.baseUrl);
-  const qwenEndpoint = qwenConfig.endpoint
-    ? validateExternalUrl(qwenConfig.endpoint, true)
-    : undefined;
 
   return {
     ...input,
-    porkbun: {
-      ...input.porkbun,
-      enabled: porkbunEnabled,
-    },
-    namecheap: {
-      ...input.namecheap,
-      enabled: namecheapEnabled,
-    },
     pricingApi: {
       ...input.pricingApi,
       baseUrl: pricingApiBaseUrl,
       enabled: input.pricingApi.enabled || Boolean(pricingApiBaseUrl),
-    },
-    qwenInference: {
-      ...qwenConfig,
-      endpoint: qwenEndpoint,
-      enabled: qwenConfig.enabled && Boolean(qwenEndpoint),
     },
     checkout: {
       ...input.checkout,
@@ -272,15 +222,12 @@ export function loadConfig(): Config {
 export const config = loadConfig();
 
 export function hasRegistrarApi(): boolean {
-  return config.pricingApi.enabled || config.porkbun.enabled || config.namecheap.enabled;
+  return config.pricingApi.enabled;
 }
 
 export function getAvailableSources(): string[] {
   const sources: string[] = [];
-  if (config.qwenInference?.enabled) sources.push('qwen_inference');
   if (config.pricingApi.enabled) sources.push('pricing_api');
-  if (config.porkbun.enabled) sources.push('porkbun');
-  if (config.namecheap.enabled) sources.push('namecheap');
   sources.push('rdap', 'whois');
   return sources;
 }

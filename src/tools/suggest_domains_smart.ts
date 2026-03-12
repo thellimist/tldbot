@@ -20,8 +20,6 @@ import {
 } from '../utils/semantic-engine.js';
 import { logger } from '../utils/logger.js';
 import type { DomainResult } from '../types.js';
-import { getQwenClient, type QwenContext } from '../services/qwen-inference.js';
-import { checkRateLimit, inferenceRateLimiter } from '../utils/rate-limiter.js';
 
 /**
  * Premium price thresholds by TLD (first year price in USD).
@@ -115,21 +113,18 @@ export type SuggestDomainsSmartInput = z.infer<typeof suggestDomainsSmartSchema>
  */
 export const suggestDomainsSmartTool = {
   name: 'suggest_domains_smart',
-  description: `AI-powered domain name suggestion engine.
+  description: `Domain name suggestion engine.
 
 Generate creative, brandable domain names from keywords or business descriptions.
-Combines multiple intelligent sources for maximum coverage and quality.
+Uses a semantic engine for broad, local-first suggestions.
 
 Features:
-- ZERO-CONFIG: Works out of the box with our fine-tuned Qwen 7B-DPO model
-- Domain-specialized fine-tuned model for higher quality suggestions
 - Understands natural language queries ("coffee shop in seattle")
 - Auto-detects industry for contextual suggestions
 - Generates portmanteau/blended names (instagram = instant + telegram)
 - Applies modern naming patterns (ly, ify, io, hub, etc.)
 - Filters premium domains by default
-- Availability verified via Porkbun/RDAP
-- Graceful fallback: Fine-tuned Qwen → Semantic engine
+- Availability verified via RDAP/WHOIS
 
 Examples:
 - suggest_domains_smart("ai customer service") → AI-themed suggestions
@@ -238,7 +233,7 @@ interface SmartSuggestion {
   privacy_included: boolean;
   score: number;
   category: 'standard' | 'premium' | 'auction' | 'unavailable';
-  source: 'qwen_inference' | 'semantic_engine';
+  source: 'semantic_engine';
 }
 
 /**
@@ -251,7 +246,6 @@ interface SuggestDomainsSmartResponse {
   tld: string;
   style: string;
   sources: {
-    qwen_inference: number;
     semantic_engine: number;
   };
   total_checked: number;
@@ -279,66 +273,12 @@ export async function executeSuggestDomainsSmart(
     const detectedWords = segmentWords(normalizedQuery);
     const detectedIndustry = industry || project_context?.industry || detectIndustry(detectedWords);
 
-    // Build Qwen context from project_context if provided
-    const qwenContext: QwenContext | undefined = project_context ? {
-      projectName: project_context.name,
-      description: project_context.description,
-      industry: project_context.industry || detectedIndustry || undefined,
-      keywords: project_context.keywords,
-      repositoryUrl: project_context.repository_url,
-    } : undefined;
-
     // Track source statistics
     const sourceStats = {
-      qwen_inference: 0,
       semantic_engine: 0,
     };
 
-    // ========================================
-    // STEP 1: Generate suggestions from ALL sources in PARALLEL
-    // ========================================
-
-    // AI Source Priority (January 2026 - Zero-Config Design):
-    // 1. PRIMARY: VPS fine-tuned Qwen 7B-DPO (llama-server:8000) - FREE, domain-specialized
-    // 2. FALLBACK: Together.ai (deprecated BYOK) - 3s delayed start to prefer VPS
-    // 3. ALWAYS: Semantic engine (rule-based, offline) - runs in parallel
-
-    // P3 FIX: Rate limit AI inference calls
-    checkRateLimit(inferenceRateLimiter, 'suggest_domains_smart', 'AI domain suggestions');
-
-    // Common AI options
-    const aiOptions = {
-      query: normalizedQuery,
-      style,
-      tld,
-      max_suggestions: max_suggestions * 2,
-      temperature: style === 'creative' ? 0.9 : 0.7,
-      context: qwenContext,
-    };
-
-    // Build parallel promise array for AI sources
-    type AIResult = {
-      suggestions: Array<{ name: string; tld: string; reason?: string }>;
-      source: 'qwen_inference';
-    };
-
-    const aiPromises: Promise<AIResult>[] = [];
-
-    // PRIMARY: VPS fine-tuned Qwen 7B-DPO (starts immediately)
-    const qwenClient = getQwenClient();
-    if (qwenClient) {
-      aiPromises.push(
-        qwenClient.suggest(aiOptions).then((results) => {
-          if (!results || results.length === 0) {
-            throw new Error('Empty Qwen results');
-          }
-          logger.debug('VPS Qwen completed (parallel)', { count: results.length });
-          return { suggestions: results, source: 'qwen_inference' as const };
-        })
-      );
-    }
-
-    // Semantic engine runs in parallel (instant, offline)
+    // STEP 1: Generate suggestions from the semantic engine
     const semanticPromise = Promise.resolve(
       generateSmartSuggestions(normalizedQuery, {
         maxSuggestions: max_suggestions * 3,
@@ -349,68 +289,25 @@ export async function executeSuggestDomainsSmart(
       })
     );
 
-    // Race AI sources - first success wins
-    let aiSuggestions: Array<{ name: string; tld: string; reason?: string }> = [];
-    let aiSource: 'qwen_inference' | null = null;
-
-    if (aiPromises.length > 0) {
-      try {
-        const winner = await Promise.any(aiPromises);
-        aiSuggestions = winner.suggestions;
-        aiSource = winner.source;
-
-        sourceStats.qwen_inference = winner.suggestions.length;
-
-        logger.info('AI race winner', {
-          source: winner.source,
-          count: winner.suggestions.length,
-          sample: winner.suggestions.slice(0, 2).map(s => s.name),
-        });
-      } catch (error) {
-        // All AI sources failed - AggregateError from Promise.any
-        logger.warn('All AI sources failed, using semantic engine only', {
-          error: error instanceof Error ? error.message : 'unknown',
-        });
-      }
-    }
-
-    // Get semantic results (already completed or completing)
+    // Get semantic results
     const semanticSuggestions = await semanticPromise;
     sourceStats.semantic_engine = semanticSuggestions.length;
 
-    // ========================================
-    // STEP 2: Merge and deduplicate suggestions
-    // ========================================
-
     // Track which domains came from which source
-    const domainSources = new Map<string, 'qwen_inference' | 'semantic_engine'>();
-
-    // Add AI suggestions first (highest priority - VPS Qwen → Together.ai)
-    for (const ais of aiSuggestions) {
-      const fullDomain = `${ais.name}.${ais.tld}`.toLowerCase();
-      domainSources.set(fullDomain, aiSource || 'semantic_engine');
-    }
+    const domainSources = new Map<string, 'semantic_engine'>();
 
     // Add semantic suggestions
     const styledSuggestions = applyStyleFilter(semanticSuggestions, style, normalizedQuery);
     for (const name of styledSuggestions) {
       const fullDomain = `${name}.${tld}`.toLowerCase();
-      // Don't override AI suggestions
-      if (!domainSources.has(fullDomain)) {
-        domainSources.set(fullDomain, 'semantic_engine');
-      }
+      domainSources.set(fullDomain, 'semantic_engine');
     }
-
-    // ========================================
-    // STEP 3: Check availability for all suggestions via Porkbun/RDAP
-    // ========================================
 
     const available: SmartSuggestion[] = [];
     const premium: SmartSuggestion[] = [];
     let unavailableCount = 0;
     let totalChecked = 0;
 
-    // Build candidate list from all sources
     const candidates = styledSuggestions.slice(0, max_suggestions);
 
     const BATCH_SIZE = 5;
@@ -455,7 +352,7 @@ export async function executeSuggestDomainsSmart(
             : isPremiumDomain
             ? 'premium'
             : 'standard',
-          source: domainSources.get(fullDomain) || 'semantic_engine',
+          source: 'semantic_engine',
         };
 
         if (!result.available) {
@@ -475,11 +372,6 @@ export async function executeSuggestDomainsSmart(
       }
     }
 
-    // ========================================
-    // STEP 4: Sort and finalize results
-    // ========================================
-
-    // Sort by score (higher is better)
     available.sort((a, b) => b.score - a.score);
     premium.sort((a, b) => b.score - a.score);
 
@@ -487,16 +379,8 @@ export async function executeSuggestDomainsSmart(
     const finalAvailable = available.slice(0, max_suggestions);
     const finalPremium = include_premium ? premium.slice(0, Math.floor(max_suggestions / 2)) : [];
 
-    // ========================================
-    // STEP 5: Generate insights
-    // ========================================
-
     const insights: string[] = [];
 
-    // Source info - AI provider attribution
-    if (sourceStats.qwen_inference > 0) {
-      insights.push(`🤖 ${sourceStats.qwen_inference} AI suggestions from fine-tuned Qwen 7B-DPO`);
-    }
     insights.push(`🔍 Semantic Engine generated ${sourceStats.semantic_engine} suggestions`);
 
     if (detectedIndustry) {

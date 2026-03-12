@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { formatToolResult } from './utils/format.js';
 import type { PurchaseResult, SearchResponse } from './types.js';
@@ -22,14 +24,9 @@ const KNOWN_VALUE_FLAGS = new Set([
   '--platforms',
   '--registrar',
 ]);
-const SKILL_URL =
-  'https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/SKILL.md';
-const AGENTS_SNIPPET_URL =
-  'https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/references/agents-snippet.md';
-const GUIDE_URL =
-  'https://github.com/thellimist/tldbot/blob/main/docs/domain-selection/domain-selection.md';
 const REPO_URL = 'https://github.com/thellimist/tldbot';
 const ISSUES_URL = 'https://github.com/thellimist/tldbot/issues';
+const SKILL_PATH = join(__dirname, '..', 'skills', 'tldbot-domain-selector', 'SKILL.md');
 
 function normalizeHelpTopic(value: string | undefined): HelpTopic {
   switch ((value || '').toLowerCase()) {
@@ -123,23 +120,13 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     return [
       `${CLI_COMMAND} skills`,
       '',
-      'Install or read the interactive domain-selection skill.',
+      'Print the installable domain-selection skill.',
       '',
-      'Codex skill install:',
-      `  mkdir -p ~/.codex/skills/tldbot-domain-selector`,
-      `  curl -fsSL ${SKILL_URL} -o ~/.codex/skills/tldbot-domain-selector/SKILL.md`,
+      'Usage:',
+      `  ${CLI_COMMAND} skills`,
       '',
-      'Claude Code or AGENTS.md fallback:',
-      `  curl -fsSL ${AGENTS_SNIPPET_URL} >> AGENTS.md`,
-      '',
-      'Read the domain guide:',
-      `  ${GUIDE_URL}`,
-      '',
-      'What the skill does:',
-      '  - starts with many options, not one fixed name',
-      '  - runs fast search first on hot TLDs',
-      '  - verifies only the shortlist',
-      '  - checks socials and buy paths last',
+      'Tip:',
+      `  ${CLI_COMMAND} skills > ~/.codex/skills/tldbot-domain-selector/SKILL.md`,
     ].join('\n');
   }
 
@@ -156,7 +143,7 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     '  search          Search one or more names across TLDs',
     '  check_socials   Check social handle availability for a shortlist name',
     '  buy             Show the next buy command for a domain',
-    '  skills          Show skill install/help for agents',
+    '  skills          Print the installable domain-selection skill',
     '  help            Show top-level or command help',
     '  mcp             Start the stdio MCP server explicitly',
     '',
@@ -173,7 +160,7 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     `  ${CLI_COMMAND} skills`,
     '',
     'Agent workflow:',
-    `  ${CLI_COMMAND} help skills`,
+    `  ${CLI_COMMAND} skills`,
     '',
     'More:',
     `  Docs:   ${REPO_URL}`,
@@ -189,6 +176,10 @@ export type DirectCliCommand =
     }
   | {
       command: 'version';
+      output: 'table';
+    }
+  | {
+      command: 'skills';
       output: 'table';
     }
   | {
@@ -378,6 +369,10 @@ function formatMultiSearchJson(domains: string[], tlds: string[], results: Searc
   );
 }
 
+function readSkillMarkdown(): string {
+  return readFileSync(SKILL_PATH, 'utf8');
+}
+
 function openUrlInBrowser(url: string): void {
   const command =
     process.platform === 'darwin'
@@ -446,8 +441,7 @@ export function resolveDirectCliSearchCommand(
 
   if (command === 'skills') {
     return {
-      command: 'help',
-      topic: 'skills',
+      command: 'skills',
       output: 'table',
     };
   }
@@ -463,7 +457,7 @@ export function resolveDirectCliSearchCommand(
       return { command: 'help', topic: 'buy', output: 'table' };
     }
     if (command === 'skills') {
-      return { command: 'help', topic: 'skills', output: 'table' };
+      return { command: 'skills', output: 'table' };
     }
     return {
       command: 'help',
@@ -555,6 +549,8 @@ export async function tryHandleDirectCliCommand(
       ? renderHelpText(command.topic)
       : command.command === 'version'
         ? CLI_VERSION
+        : command.command === 'skills'
+          ? readSkillMarkdown()
         : command.command === 'search'
           ? await executeRegisteredTool('search', command.input as SearchDomainInput)
           : command.command === 'search_multi'
@@ -586,7 +582,7 @@ export async function tryHandleDirectCliCommand(
   }
 
   const output =
-    command.command === 'help' || command.command === 'version'
+    command.command === 'help' || command.command === 'version' || command.command === 'skills'
       ? (result as string)
       : command.command === 'search_multi' && command.output === 'json'
         ? formatMultiSearchJson(

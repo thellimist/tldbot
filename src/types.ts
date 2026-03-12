@@ -14,7 +14,7 @@ export type DomainStatus = 'available' | 'for_sale' | 'taken';
 export type VerificationMode = 'smart' | 'strict' | 'fast';
 export type VerificationStatus = 'confirmed' | 'provisional' | 'skipped_rate_limited';
 
-export type CheckoutRegistrar = 'namecheap' | 'porkbun' | 'cloudflare' | 'godaddy';
+export type CheckoutRegistrar = 'namecheap' | 'cloudflare' | 'godaddy';
 
 export interface AftermarketInfo {
   type: 'auction' | 'aftermarket' | 'premium';
@@ -66,7 +66,7 @@ export interface DomainResult {
   /** Cost to transfer domain to this registrar */
   transfer_price: number | null;
 
-  /** Registrar name (e.g., "porkbun", "namecheap") */
+  /** Registrar name (e.g., "namecheap", "godaddy") */
   registrar: string;
 
   /** Marketplace when the domain is listed for resale */
@@ -114,8 +114,6 @@ export interface DomainResult {
  * Order matters: earlier sources are preferred.
  */
 export type DataSource =
-  | 'porkbun_api'
-  | 'namecheap_api'
   | 'godaddy_api'
   | 'rdap'
   | 'whois'
@@ -127,8 +125,6 @@ export type DataSource =
  * Pricing data origin (can differ from availability source).
  */
 export type PricingSource =
-  | 'porkbun_api'
-  | 'namecheap_api'
   | 'pricing_api'
   | 'catalog';
 
@@ -300,69 +296,25 @@ export interface PurchaseResult {
  * File-based runtime configuration.
  */
 export interface Config {
-  // API Keys (optional - server works without them)
-  porkbun: {
-    apiKey?: string;
-    apiSecret?: string;
-    enabled: boolean;
-  };
-  namecheap: {
-    apiKey?: string;
-    apiUser?: string;
-    clientIp?: string;
-    enabled: boolean;
-  };
-
   pricingApi: {
     baseUrl?: string;
     enabled: boolean;
-    timeoutMs: number;
-    maxQuotesPerSearch: number;
-    maxQuotesPerBulk: number;
-    concurrency: number;
     token?: string;
   };
-
-  // Qwen inference (optional local AI-powered suggestions via llama.cpp)
-  qwenInference?: {
-    endpoint?: string;
-    apiKey?: string;
-    enabled: boolean;
-    timeoutMs: number;
-    maxRetries: number;
-  };
-
-  // Logging
-  logLevel: 'debug' | 'info' | 'warn' | 'error';
 
   // Cache TTLs in seconds
   cache: {
     availabilityTtl: number;
-    pricingTtl: number;
-    sedoTtl: number;
   };
-
-  // Rate limiting
-  rateLimitPerMinute: number;
 
   // TLD restrictions
   defaultSearchTlds: string[];
   allowedTlds: string[];
-  denyTlds: string[];
-
-  // Development
-  dryRun: boolean;
-
-  // Output format for tool results
-  outputFormat: 'table' | 'json' | 'both';
 
   // Aftermarket data sources
   aftermarket: {
     sedoEnabled: boolean;
-    sedoFeedUrl: string;
     nsEnabled: boolean;
-    nsCacheTtl: number;
-    nsTimeoutMs: number;
   };
 
   // Checkout flow

@@ -30,9 +30,9 @@ type NsFingerprint = {
   note?: string;
 };
 
-const NS_TIMEOUT_MS = config.aftermarket.nsTimeoutMs;
+const NS_TIMEOUT_MS = 1500;
 const nsCache = new TtlCache<AftermarketListing | null>(
-  config.aftermarket.nsCacheTtl,
+  300,
 );
 
 const NS_FINGERPRINTS: NsFingerprint[] = [

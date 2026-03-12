@@ -5,7 +5,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { config, getAvailableSources, hasRegistrarApi } from './config.js';
+import { getAvailableSources, hasRegistrarApi } from './config.js';
 import {
   logger,
   generateRequestId,
@@ -22,6 +22,7 @@ import {
 
 const SERVER_NAME = 'tldbot';
 const SERVER_VERSION = '0.0.1';
+const MCP_OUTPUT_FORMAT = 'table';
 
 export function createServer(): Server {
   const server = new Server(
@@ -59,7 +60,7 @@ export function createServer(): Server {
         content: [
           {
             type: 'text',
-            text: formatToolResult(name, result, config.outputFormat),
+            text: formatToolResult(name, result, MCP_OUTPUT_FORMAT),
           },
         ],
       };
@@ -84,7 +85,7 @@ export function createServer(): Server {
                 retryable: wrapped.retryable,
                 suggestedAction: wrapped.suggestedAction,
               },
-              config.outputFormat,
+              MCP_OUTPUT_FORMAT,
             ),
           },
         ],
@@ -105,14 +106,10 @@ export async function startServer(): Promise<void> {
     transport: 'stdio',
     sources: getAvailableSources(),
     has_registrar_api: hasRegistrarApi(),
-    dry_run: config.dryRun,
   });
 
   if (!hasRegistrarApi()) {
-    logger.warn('No registrar API keys configured. Falling back to RDAP/WHOIS only.');
-    logger.warn(
-      'For pricing info, add pricingApi or registrar credentials to your config file.',
-    );
+    logger.warn('No pricing API configured. Falling back to RDAP/WHOIS and public estimates only.');
   }
 
   const server = createServer();

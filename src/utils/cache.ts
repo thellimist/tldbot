@@ -23,6 +23,7 @@ interface CacheEntry<T> {
  * With ~1KB per entry average, 10000 entries ≈ 10MB max.
  */
 const DEFAULT_MAX_CACHE_SIZE = 10000;
+const PRICING_CACHE_TTL_SECONDS = 3600;
 
 /**
  * Generic TTL cache with automatic expiration and size limits.
@@ -284,7 +285,7 @@ export const domainCache = new TtlCache<DomainResult>(
   join(runtimeStateDir, 'domain-cache.json'),
 );
 
-export const pricingCache = new TtlCache<DomainResult[]>(config.cache.pricingTtl);
+export const pricingCache = new TtlCache<DomainResult[]>(PRICING_CACHE_TTL_SECONDS);
 
 export const tldCache = new TtlCache<TLDInfo>(
   86400,

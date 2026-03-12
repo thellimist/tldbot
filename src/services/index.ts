@@ -12,10 +12,3 @@ export {
   pickCheckoutRegistrar,
   isCheckoutRegistrar,
 } from './checkout.js';
-
-export {
-  getQwenClient,
-  type QwenDomain,
-  type QwenContext,
-  type QwenSuggestOptions,
-} from './qwen-inference.js';

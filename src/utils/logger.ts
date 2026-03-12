@@ -6,8 +6,6 @@
  * - Includes request IDs for tracing
  */
 
-import { config } from '../config.js';
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 type LogOutputMode = 'json' | 'plain';
 
@@ -82,12 +80,13 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   warn: 2,
   error: 3,
 };
+const DEFAULT_LOG_LEVEL: LogLevel = 'info';
 
 /**
  * Should this level be logged?
  */
 function shouldLog(level: LogLevel): boolean {
-  return LOG_LEVELS[level] >= LOG_LEVELS[config.logLevel];
+  return LOG_LEVELS[level] >= LOG_LEVELS[DEFAULT_LOG_LEVEL];
 }
 
 /**

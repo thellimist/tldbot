@@ -10,7 +10,7 @@ export const purchaseDomainSchema = z.object({
     .min(3)
     .describe('Full domain to purchase, including TLD (for example, "example.com").'),
   registrar: z
-    .enum(['namecheap', 'porkbun', 'cloudflare', 'godaddy'])
+    .enum(['namecheap', 'cloudflare', 'godaddy'])
     .optional()
     .describe('Optional registrar override. Defaults to the configured checkout registrar.'),
 });
@@ -23,7 +23,6 @@ export const purchaseDomainTool = {
 
 Supported registrars:
 - namecheap
-- porkbun
 - cloudflare
 - godaddy`,
   inputSchema: {
@@ -35,7 +34,7 @@ Supported registrars:
       },
       registrar: {
         type: 'string',
-        enum: ['namecheap', 'porkbun', 'cloudflare', 'godaddy'],
+        enum: ['namecheap', 'cloudflare', 'godaddy'],
         description: 'Optional registrar override.',
       },
     },

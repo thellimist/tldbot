@@ -69,7 +69,7 @@ describe('Premium Analyzer', () => {
         privacy_included: false,
         transfer_price: null,
         registrar: 'porkbun',
-        source: 'porkbun_api',
+        source: 'pricing_api',
         checked_at: new Date().toISOString(),
       };
 
@@ -91,7 +91,7 @@ describe('Premium Analyzer', () => {
         privacy_included: true,
         transfer_price: null,
         registrar: 'porkbun',
-        source: 'porkbun_api',
+        source: 'pricing_api',
         checked_at: new Date().toISOString(),
       };
 
@@ -178,7 +178,7 @@ describe('Premium Analyzer', () => {
         privacy_included: true,
         transfer_price: null,
         registrar: 'porkbun',
-        source: 'porkbun_api',
+        source: 'pricing_api',
         checked_at: new Date().toISOString(),
       };
 
@@ -202,7 +202,7 @@ describe('Premium Analyzer', () => {
         privacy_included: false,
         transfer_price: null,
         registrar: 'porkbun',
-        source: 'porkbun_api',
+        source: 'pricing_api',
         checked_at: new Date().toISOString(),
       };
 
@@ -226,7 +226,7 @@ describe('Premium Analyzer', () => {
         privacy_included: true,
         transfer_price: null,
         registrar: 'porkbun',
-        source: 'porkbun_api',
+        source: 'pricing_api',
         checked_at: new Date().toISOString(),
       };
 
@@ -250,7 +250,7 @@ describe('Premium Analyzer', () => {
           privacy_included: true,
           transfer_price: null,
           registrar: 'porkbun',
-          source: 'porkbun_api',
+          source: 'pricing_api',
           checked_at: new Date().toISOString(),
         },
       ];
@@ -272,7 +272,7 @@ describe('Premium Analyzer', () => {
           privacy_included: false,
           transfer_price: null,
           registrar: 'porkbun',
-          source: 'porkbun_api',
+          source: 'pricing_api',
           checked_at: new Date().toISOString(),
         },
       ];
@@ -294,7 +294,7 @@ describe('Premium Analyzer', () => {
           privacy_included: false,
           transfer_price: null,
           registrar: 'porkbun',
-          source: 'porkbun_api',
+          source: 'pricing_api',
           checked_at: new Date().toISOString(),
         },
         {

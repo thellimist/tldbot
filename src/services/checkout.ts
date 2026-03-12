@@ -3,7 +3,6 @@ import type { CheckoutRegistrar } from '../types.js';
 
 const SUPPORTED_CHECKOUT_REGISTRARS: CheckoutRegistrar[] = [
   'namecheap',
-  'porkbun',
   'cloudflare',
   'godaddy',
 ];
@@ -38,13 +37,6 @@ export function buildCheckoutUrl(
   const encodedDomain = encodeURIComponent(domain);
 
   switch (selectedRegistrar) {
-    case 'porkbun': {
-      return {
-        registrar: selectedRegistrar,
-        checkout_url: `https://porkbun.com/checkout/search?q=${encodedDomain}`,
-      };
-    }
-
     case 'cloudflare':
       return {
         registrar: selectedRegistrar,

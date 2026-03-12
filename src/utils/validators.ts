@@ -8,6 +8,8 @@
 import { config } from '../config.js';
 import { InvalidDomainError, UnsupportedTldError } from './errors.js';
 
+const DENY_TLDS = ['localhost', 'internal', 'test', 'local'];
+
 /**
  * Valid domain name pattern (without TLD).
  * - 1-63 characters per label
@@ -101,7 +103,7 @@ export function validateTld(tld: string): string {
   }
 
   // Check against deny list
-  if (config.denyTlds.includes(normalized)) {
+  if (DENY_TLDS.includes(normalized)) {
     throw new UnsupportedTldError(normalized, config.allowedTlds);
   }
 
@@ -180,7 +182,7 @@ export function buildDomain(name: string, tld: string): string {
  */
 export function validateRegistrar(registrar: string): string {
   const normalized = registrar.trim().toLowerCase();
-  const validRegistrars = ['porkbun', 'namecheap'];
+  const validRegistrars = ['namecheap', 'godaddy', 'cloudflare'];
 
   if (!validRegistrars.includes(normalized)) {
     throw new Error(

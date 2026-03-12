@@ -12,11 +12,9 @@ import type { DomainResult, TLDInfo } from '../types.js';
 import { logger } from '../utils/logger.js';
 import {
   RateLimitError,
-  RegistrarApiError,
   TimeoutError,
   wrapError,
 } from '../utils/errors.js';
-import { config } from '../config.js';
 
 /**
  * Token bucket rate limiter.
@@ -144,11 +142,6 @@ export abstract class RegistrarAdapter {
    * Execute a function with rate limiting.
    */
   protected async rateLimitedCall<T>(fn: () => Promise<T>): Promise<T> {
-    // Check if we should even try (dry run mode)
-    if (config.dryRun) {
-      throw new RegistrarApiError(this.name, 'Dry run mode - no API calls made');
-    }
-
     // Wait for rate limit
     const waitSeconds = this.rateLimiter.getWaitSeconds();
     if (waitSeconds > 0) {

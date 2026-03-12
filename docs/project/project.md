@@ -22,6 +22,29 @@ It helps agents and shell users:
 The CLI is the primary product surface.
 MCP is a thin adapter over the same runtime.
 
+## TLD policy
+
+`tldbot` only searches a focused set of TLDs by default.
+
+Main reason:
+most users want the common, commercially useful TLDs.
+They do not want a huge list of novelty TLDs by default.
+
+So `tldbot` prioritizes the TLDs people usually actually want for:
+- startups
+- AI agents
+- products
+- developer tools
+
+That keeps search:
+- faster
+- cleaner
+- more relevant
+
+If someone wants more TLDs, they can:
+- pass `--tlds` for a one-off search
+- update `defaultSearchTlds` and `allowedTlds` in config for permanent changes
+
 ## Goals
 
 1. CLI-first UX.

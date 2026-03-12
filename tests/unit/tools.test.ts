@@ -27,13 +27,13 @@ describe('searchDomainSchema', () => {
     const result = searchDomainSchema.parse({
       domain_name: 'vibecoding',
       tlds: ['com', 'io', 'dev'],
-      registrars: ['porkbun'],
+      registrars: ['godaddy'],
       verification_mode: 'fast',
     });
 
     expect(result.domain_name).toBe('vibecoding');
     expect(result.tlds).toEqual(['com', 'io', 'dev']);
-    expect(result.registrars).toEqual(['porkbun']);
+    expect(result.registrars).toEqual(['godaddy']);
     expect(result.verification_mode).toBe('fast');
   });
 
