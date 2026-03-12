@@ -1,4 +1,3 @@
-import { basename } from 'node:path';
 import { spawn } from 'node:child_process';
 import { formatToolResult } from './utils/format.js';
 import type { PurchaseResult, SearchResponse } from './types.js';
@@ -13,7 +12,7 @@ import type { CheckSocialsInput } from './tools/check_socials.js';
 import type { PurchaseDomainInput } from './tools/purchase_domain.js';
 
 type OutputMode = 'json' | 'table';
-type HelpTopic = 'top' | 'search_domain' | 'check_socials' | 'buy' | 'skills';
+type HelpTopic = 'top' | 'search' | 'check_socials' | 'buy' | 'skills';
 
 const MULTI_SEARCH_CONCURRENCY = 8;
 const KNOWN_VALUE_FLAGS = new Set([
@@ -35,16 +34,12 @@ const ISSUES_URL = 'https://github.com/thellimist/tldbot/issues';
 function normalizeHelpTopic(value: string | undefined): HelpTopic {
   switch ((value || '').toLowerCase()) {
     case 'search':
-    case 'search_domain':
-    case 'domain_search':
-      return 'search_domain';
+      return 'search';
     case 'social':
     case 'socials':
     case 'check_socials':
       return 'check_socials';
     case 'buy':
-    case '--buy':
-    case 'purchase_domain':
       return 'buy';
     case 'skill':
     case 'skills':
@@ -56,14 +51,14 @@ function normalizeHelpTopic(value: string | undefined): HelpTopic {
 }
 
 function renderHelpText(topic: HelpTopic = 'top'): string {
-  if (topic === 'search_domain') {
+  if (topic === 'search') {
     return [
-      `${CLI_COMMAND} search_domain`,
+      `${CLI_COMMAND} search`,
       '',
       'Search one or more names across a default or custom TLD set.',
       '',
       'Usage:',
-      `  ${CLI_COMMAND} search_domain <name...> [--tlds com,io,dev] [--verify|--fast] [--json]`,
+      `  ${CLI_COMMAND} search <name...> [--tlds com,io,dev] [--verify|--fast] [--json]`,
       '',
       'Options:',
       '  --tlds CSV          Override the default TLD set',
@@ -74,9 +69,9 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
       '  -h, --help          Show this help',
       '',
       'Examples:',
-      `  ${CLI_COMMAND} search_domain tldbot`,
-      `  ${CLI_COMMAND} search_domain tldbot namecli --tlds com,io,dev,app,co`,
-      `  ${CLI_COMMAND} search_domain tldbot --tlds ai,io,sh,app,dev,bot --verify`,
+      `  ${CLI_COMMAND} search tldbot`,
+      `  ${CLI_COMMAND} search tldbot namecli --tlds com,io,dev,app,co`,
+      `  ${CLI_COMMAND} search tldbot --tlds ai,io,sh,app,dev,bot --verify`,
       '',
       'Notes:',
       '  Hot TLDs are searched fast first. Verify only the shortlist you actually like.',
@@ -109,7 +104,6 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
       'Show the next buy command for an available or for-sale domain.',
       '',
       'Usage:',
-      `  ${CLI_COMMAND} --buy <domain.tld> [--registrar namecheap|godaddy|cloudflare] [--price] [--json]`,
       `  ${CLI_COMMAND} buy <domain.tld> [--registrar namecheap|godaddy|cloudflare] [--price] [--json]`,
       '',
       'Options:',
@@ -119,9 +113,9 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
       '  -h, --help          Show this help',
       '',
       'Examples:',
-      `  ${CLI_COMMAND} --buy tldbot.com`,
-      `  ${CLI_COMMAND} --buy tldbot.com --price`,
-      `  ${CLI_COMMAND} --buy tldbot.com --registrar godaddy`,
+      `  ${CLI_COMMAND} buy tldbot.com`,
+      `  ${CLI_COMMAND} buy tldbot.com --price`,
+      `  ${CLI_COMMAND} buy tldbot.com --registrar godaddy`,
     ].join('\n');
   }
 
@@ -135,7 +129,7 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
       `  mkdir -p ~/.codex/skills/tldbot-domain-selector`,
       `  curl -fsSL ${SKILL_URL} -o ~/.codex/skills/tldbot-domain-selector/SKILL.md`,
       '',
-      'AGENTS.md fallback:',
+      'Claude Code or AGENTS.md fallback:',
       `  curl -fsSL ${AGENTS_SNIPPET_URL} >> AGENTS.md`,
       '',
       'Read the domain guide:',
@@ -156,12 +150,12 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     '',
     'Usage:',
     `  ${CLI_COMMAND} <command> [options]`,
-    `  ${CLI_COMMAND} --buy <domain.tld> [options]`,
+    `  ${CLI_COMMAND} buy <domain.tld> [options]`,
     '',
     'Commands:',
-    '  search_domain   Search one or more names across TLDs',
+    '  search          Search one or more names across TLDs',
     '  check_socials   Check social handle availability for a shortlist name',
-    '  buy             Alias for --buy',
+    '  buy             Show the next buy command for a domain',
     '  skills          Show skill install/help for agents',
     '  help            Show top-level or command help',
     '  mcp             Start the stdio MCP server explicitly',
@@ -172,10 +166,10 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     '  --config PATH   Use a JSON config file',
     '',
     'Examples:',
-    `  ${CLI_COMMAND} search_domain tldbot --tlds com,io,dev,app,co`,
-    `  ${CLI_COMMAND} search_domain tldbot --tlds ai,io,sh --verify`,
+    `  ${CLI_COMMAND} search tldbot --tlds com,io,dev,app,co`,
+    `  ${CLI_COMMAND} search tldbot --tlds ai,io,sh --verify`,
     `  ${CLI_COMMAND} check_socials tldbot`,
-    `  ${CLI_COMMAND} --buy tldbot.com --price`,
+    `  ${CLI_COMMAND} buy tldbot.com --price`,
     `  ${CLI_COMMAND} skills`,
     '',
     'Agent workflow:',
@@ -198,12 +192,12 @@ export type DirectCliCommand =
       output: 'table';
     }
   | {
-      command: 'search_domain';
+      command: 'search';
       input: SearchDomainInput;
       output: OutputMode;
     }
   | {
-      command: 'search_domain_multi';
+      command: 'search_multi';
       domains: string[];
       tlds?: string[];
       registrars?: string[];
@@ -211,7 +205,7 @@ export type DirectCliCommand =
       output: OutputMode;
     }
   | {
-      command: 'purchase_domain';
+      command: 'buy';
       input: PurchaseDomainInput;
       output: OutputMode;
       openBrowser: boolean;
@@ -339,11 +333,11 @@ function formatMultiSearchTable(domains: string[], tlds: string[], results: Sear
   const totalDuration = results.reduce((sum, result) => sum + result.duration_ms, 0);
   const nonVerified = [...new Set(results.flatMap((result) => result.non_verified_domains || []))];
   const nextCommands = [
-    `${CLI_COMMAND} search_domain <domain> --tlds ${tlds.join(',')}`,
+    `${CLI_COMMAND} search <domain> --tlds ${tlds.join(',')}`,
     `${CLI_COMMAND} check_socials <domain>`,
-    `${CLI_COMMAND} --buy <domain.tld> --price`,
+    `${CLI_COMMAND} buy <domain.tld> --price`,
     ...(nonVerified.length > 0
-      ? [`${CLI_COMMAND} search_domain <domain> --tlds ${[...new Set(nonVerified.map((domain) => domain.split('.').pop()).filter(Boolean))].join(',')} --verify`]
+      ? [`${CLI_COMMAND} search <domain> --tlds ${[...new Set(nonVerified.map((domain) => domain.split('.').pop()).filter(Boolean))].join(',')} --verify`]
       : []),
   ];
 
@@ -371,11 +365,11 @@ function formatMultiSearchJson(domains: string[], tlds: string[], results: Searc
       ]),
       non_verified: [...new Set(results.flatMap((result) => result.non_verified_domains || []))],
       next: [
-        `${CLI_COMMAND} search_domain <domain> --tlds ${tlds.join(',')}`,
+        `${CLI_COMMAND} search <domain> --tlds ${tlds.join(',')}`,
         `${CLI_COMMAND} check_socials <domain>`,
-        `${CLI_COMMAND} --buy <domain.tld> --price`,
+        `${CLI_COMMAND} buy <domain.tld> --price`,
         ...([...new Set(results.flatMap((result) => result.non_verified_domains || []))].length > 0
-          ? [`${CLI_COMMAND} search_domain <domain> --tlds ${[...new Set(results.flatMap((result) => result.non_verified_domains || []).map((domain) => domain.split('.').pop()).filter(Boolean))].join(',')} --verify`]
+          ? [`${CLI_COMMAND} search <domain> --tlds ${[...new Set(results.flatMap((result) => result.non_verified_domains || []).map((domain) => domain.split('.').pop()).filter(Boolean))].join(',')} --verify`]
           : []),
       ],
     },
@@ -399,24 +393,15 @@ function openUrlInBrowser(url: string): void {
   child.unref();
 }
 
-function isSearchBinary(invokedAs: string | undefined): boolean {
-  if (!invokedAs) {
-    return false;
-  }
-
-  const name = basename(invokedAs).toLowerCase();
-  return name === CLI_COMMAND || name === 'domain_search' || name === 'search_domain';
-}
-
 export function resolveDirectCliSearchCommand(
   args: string[],
-  invokedAs: string | undefined = process.argv[1],
+  _invokedAs: string | undefined = process.argv[1],
 ): DirectCliCommand | null {
   let commandArgs = stripGlobalArgs(args);
   const explicitCommands = new Set([
-    'search_domain',
+    'search',
     'check_socials',
-    'purchase_domain',
+    'buy',
     'suggest_domains',
     'suggest_domains_smart',
     'bulk_search',
@@ -440,15 +425,6 @@ export function resolveDirectCliSearchCommand(
       };
     }
     return null;
-  }
-
-  if (
-    isSearchBinary(invokedAs) &&
-    commandArgs[0] &&
-    !commandArgs[0].startsWith('--') &&
-    !explicitCommands.has(commandArgs[0])
-  ) {
-    commandArgs = ['search_domain', ...args];
   }
 
   const command = commandArgs[0];
@@ -477,13 +453,13 @@ export function resolveDirectCliSearchCommand(
   }
 
   if (hasHelpFlag(commandArgs) || command === '--help' || command === '-h') {
-    if (command === 'search_domain' || command === 'domain_search') {
-      return { command: 'help', topic: 'search_domain', output: 'table' };
+    if (command === 'search') {
+      return { command: 'help', topic: 'search', output: 'table' };
     }
     if (command === 'check_socials') {
       return { command: 'help', topic: 'check_socials', output: 'table' };
     }
-    if (command === '--buy' || command === 'buy') {
+    if (command === 'buy') {
       return { command: 'help', topic: 'buy', output: 'table' };
     }
     if (command === 'skills') {
@@ -496,14 +472,14 @@ export function resolveDirectCliSearchCommand(
     };
   }
 
-  if (command === '--buy' || command === 'buy') {
+  if (command === 'buy') {
     const domain = extractPositionals(commandArgs, 1)[0];
     if (!domain) {
       throw new Error(renderHelpText('buy'));
     }
 
     return {
-      command: 'purchase_domain',
+      command: 'buy',
       input: {
         domain,
         registrar: getFlagValue(commandArgs, '--registrar') as PurchaseDomainInput['registrar'],
@@ -530,19 +506,19 @@ export function resolveDirectCliSearchCommand(
     };
   }
 
-  if (command !== 'search_domain' && command !== 'domain_search') {
+  if (command !== 'search') {
     return null;
   }
 
   const domainNames = extractPositionals(commandArgs, 1);
 
   if (domainNames.length === 0) {
-    throw new Error(renderHelpText('search_domain'));
+    throw new Error(renderHelpText('search'));
   }
 
   if (domainNames.length > 1) {
     return {
-      command: 'search_domain_multi',
+      command: 'search_multi',
       domains: domainNames,
       tlds: parseCsvFlag(commandArgs, '--tlds') || config.defaultSearchTlds,
       registrars: parseCsvFlag(commandArgs, '--registrars'),
@@ -552,7 +528,7 @@ export function resolveDirectCliSearchCommand(
   }
 
   return {
-    command: 'search_domain',
+    command: 'search',
     input: {
       domain_name: domainNames[0]!,
       tlds: parseCsvFlag(commandArgs, '--tlds') || config.defaultSearchTlds,
@@ -579,15 +555,15 @@ export async function tryHandleDirectCliCommand(
       ? renderHelpText(command.topic)
       : command.command === 'version'
         ? CLI_VERSION
-        : command.command === 'search_domain'
-          ? await executeRegisteredTool('search_domain', command.input as SearchDomainInput)
-          : command.command === 'search_domain_multi'
+        : command.command === 'search'
+          ? await executeRegisteredTool('search', command.input as SearchDomainInput)
+          : command.command === 'search_multi'
             ? await (async () => {
                 const limiter = new ConcurrencyLimiter(MULTI_SEARCH_CONCURRENCY);
                 return Promise.all(
                   command.domains.map((domain) =>
                     limiter.run(() =>
-                      executeRegisteredTool('search_domain', {
+                      executeRegisteredTool('search', {
                         domain_name: domain,
                         tlds: command.tlds,
                         registrars: command.registrars,
@@ -599,9 +575,9 @@ export async function tryHandleDirectCliCommand(
               })()
             : command.command === 'check_socials'
               ? await executeRegisteredTool('check_socials', command.input as CheckSocialsInput)
-              : await executeRegisteredTool('purchase_domain', command.input as PurchaseDomainInput);
+              : await executeRegisteredTool('buy', command.input as PurchaseDomainInput);
 
-  if (command.command === 'purchase_domain' && command.openBrowser) {
+  if (command.command === 'buy' && command.openBrowser) {
     const purchase = result as PurchaseResult;
     const url = purchase.checkout_url;
     if (url) {
@@ -612,7 +588,7 @@ export async function tryHandleDirectCliCommand(
   const output =
     command.command === 'help' || command.command === 'version'
       ? (result as string)
-      : command.command === 'search_domain_multi' && command.output === 'json'
+      : command.command === 'search_multi' && command.output === 'json'
         ? formatMultiSearchJson(
             command.domains,
             command.tlds || config.defaultSearchTlds,
@@ -620,13 +596,13 @@ export async function tryHandleDirectCliCommand(
           )
         : command.output === 'json'
           ? JSON.stringify(result, null, 2)
-          : command.command === 'search_domain_multi'
+          : command.command === 'search_multi'
             ? formatMultiSearchTable(
                 command.domains,
                 command.tlds || config.defaultSearchTlds,
                 result as SearchResponse[],
               )
-            : command.command === 'purchase_domain' && !command.showPrice
+            : command.command === 'buy' && !command.showPrice
               ? formatToolResult(
                   command.command,
                   {

@@ -347,10 +347,10 @@ export function formatToolResult(
   let text = '';
 
   switch (name) {
-    case 'search_domain':
+    case 'search':
       text = formatSearchResponse(typed as SearchResponse);
       break;
-    case 'purchase_domain':
+    case 'buy':
       text = formatPurchaseDomain(typed as PurchaseResult);
       break;
     case 'bulk_search':

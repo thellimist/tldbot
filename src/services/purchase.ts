@@ -11,7 +11,7 @@ function getMarketplaceCheckoutCommand(
   const normalized = (marketplace || '').toLowerCase();
 
   if (normalized === 'godaddy' || normalized === 'afternic') {
-    return `${CLI_COMMAND} --buy ${domain} --registrar godaddy`;
+    return `${CLI_COMMAND} buy ${domain} --registrar godaddy`;
   }
 
   return undefined;
@@ -70,14 +70,14 @@ export async function resolvePurchase(
       currency: pricedEntry?.currency || 'USD',
       pricing_status: pricedEntry?.pricing_status,
       checkout_url: purchaseLink.checkout_url,
-      checkout_command: `${CLI_COMMAND} --buy ${fullDomain} --registrar ${purchaseLink.registrar}`,
+      checkout_command: `${CLI_COMMAND} buy ${fullDomain} --registrar ${purchaseLink.registrar}`,
     };
   }
 
   const options = buildPreferredCheckoutLinks(fullDomain).map((link) => ({
     registrar: link.registrar,
     checkout_url: link.checkout_url,
-    checkout_command: `${CLI_COMMAND} --buy ${fullDomain} --registrar ${link.registrar}`,
+    checkout_command: `${CLI_COMMAND} buy ${fullDomain} --registrar ${link.registrar}`,
   }));
 
   return {

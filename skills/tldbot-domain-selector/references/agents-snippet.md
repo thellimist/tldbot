@@ -16,10 +16,10 @@ Run a fast domain pass first, especially for hot TLDs like `.ai`, `.io`, `.sh`, 
 5. Only suggest buy commands after the user shows conviction.
 
 Use `tldbot` for execution:
-- `tldbot search_domain <name...> --tlds com,io,dev,app,co,net,ai,sh,so,bot`
-- `tldbot search_domain <name> --tlds ai,io,sh,app,dev,bot --verify`
+- `tldbot search <name...> --tlds com,io,dev,app,co,net,ai,sh,so,bot`
+- `tldbot search <name> --tlds ai,io,sh,app,dev,bot --verify`
 - `tldbot check_socials <name>`
-- `tldbot --buy <domain.tld> --price`
+- `tldbot buy <domain.tld> --price`
 
 Model the workflow on Paul Graham's naming advice:
 - avoid early fixation on one name

@@ -39,8 +39,8 @@ export interface RegisteredTool {
 }
 
 export const REGISTERED_TOOLS: RegisteredTool[] = [
-  { name: 'search_domain', tool: searchDomainTool as Tool, schema: searchDomainSchema, execute: executeSearchDomain as RegisteredTool['execute'] },
-  { name: 'purchase_domain', tool: purchaseDomainTool as Tool, schema: purchaseDomainSchema, execute: executePurchaseDomain as RegisteredTool['execute'] },
+  { name: 'search', tool: searchDomainTool as Tool, schema: searchDomainSchema, execute: executeSearchDomain as RegisteredTool['execute'] },
+  { name: 'buy', tool: purchaseDomainTool as Tool, schema: purchaseDomainSchema, execute: executePurchaseDomain as RegisteredTool['execute'] },
   { name: 'bulk_search', tool: bulkSearchTool as Tool, schema: bulkSearchSchema, execute: executeBulkSearch as RegisteredTool['execute'] },
   { name: 'suggest_domains', tool: suggestDomainsTool as Tool, schema: suggestDomainsSchema, execute: executeSuggestDomains as RegisteredTool['execute'] },
   { name: 'suggest_domains_smart', tool: suggestDomainsSmartTool as Tool, schema: suggestDomainsSmartSchema, execute: executeSuggestDomainsSmart as RegisteredTool['execute'] },

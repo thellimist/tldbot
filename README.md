@@ -32,7 +32,7 @@ curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbo
   -o ~/.codex/skills/tldbot-domain-selector/SKILL.md
 ```
 
-Or append the AGENTS fallback snippet:
+For Claude Code or any AGENTS-based setup, append the fallback snippet:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/references/agents-snippet.md >> AGENTS.md
@@ -61,7 +61,7 @@ Show help:
 
 ```bash
 tldbot --help
-tldbot help search_domain
+tldbot help search
 tldbot help skills
 ```
 
@@ -74,25 +74,25 @@ tldbot --version
 Search default TLDs:
 
 ```bash
-tldbot search_domain tldscout
+tldbot search tldscout
 ```
 
 Search custom TLDs:
 
 ```bash
-tldbot search_domain tldscout --tlds com,io,dev,app,co,net,ai,sh,so,bot
+tldbot search tldscout --tlds com,io,dev,app,co,net,ai,sh,so,bot
 ```
 
 Verify hot TLDs explicitly:
 
 ```bash
-tldbot search_domain tldscout --tlds io,sh,bot --verify
+tldbot search tldscout --tlds io,sh,bot --verify
 ```
 
 Search multiple names:
 
 ```bash
-tldbot search_domain tldscout namecli domscout --tlds com,io,dev,app,co
+tldbot search tldscout namecli domscout --tlds com,io,dev,app,co
 ```
 
 Check socials:
@@ -104,14 +104,13 @@ tldbot check_socials tldscout
 Show buy commands:
 
 ```bash
-tldbot --buy tldscout.com
 tldbot buy tldscout.com
 ```
 
 Show buy commands with pricing context:
 
 ```bash
-tldbot --buy tldscout.com --price
+tldbot buy tldscout.com --price
 ```
 
 ## Interactive Domain Workflow
@@ -152,7 +151,7 @@ No `.env`.
 Optional config file:
 
 ```bash
-tldbot --config ./tldbot.config.json search_domain tldscout
+tldbot --config ./tldbot.config.json search tldscout
 ```
 
 Example config file lives at `./tldbot.config.example.json`.

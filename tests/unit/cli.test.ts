@@ -2,9 +2,9 @@ import { resolveDirectCliSearchCommand } from '../../src/cli.js';
 import { config } from '../../src/config.js';
 
 describe('resolveDirectCliSearchCommand', () => {
-  it('parses search_domain subcommand args', () => {
+  it('parses search subcommand args', () => {
     const result = resolveDirectCliSearchCommand([
-      'search_domain',
+      'search',
       'tldscout',
       '--tlds',
       'com,io,dev',
@@ -14,7 +14,7 @@ describe('resolveDirectCliSearchCommand', () => {
     ]);
 
     expect(result).toEqual({
-      command: 'search_domain',
+      command: 'search',
       input: {
         domain_name: 'tldscout',
         tlds: ['com', 'io', 'dev'],
@@ -31,16 +31,7 @@ describe('resolveDirectCliSearchCommand', () => {
       '/usr/local/bin/tldbot',
     );
 
-    expect(result).toEqual({
-      command: 'search_domain',
-      input: {
-        domain_name: 'namecli',
-        tlds: ['com', 'ai'],
-        registrars: undefined,
-        verification_mode: 'smart',
-      },
-      output: 'table',
-    });
+    expect(result).toBeNull();
   });
 
   it('returns null for unknown top-level args', () => {
@@ -95,9 +86,9 @@ describe('resolveDirectCliSearchCommand', () => {
     });
   });
 
-  it('parses search_domain args when flags come before names', () => {
+  it('parses search args when flags come before names', () => {
     const result = resolveDirectCliSearchCommand([
-      'search_domain',
+      'search',
       '--tlds',
       'com,io',
       'tldscout',
@@ -106,7 +97,7 @@ describe('resolveDirectCliSearchCommand', () => {
     ]);
 
     expect(result).toEqual({
-      command: 'search_domain_multi',
+      command: 'search_multi',
       domains: ['tldscout', 'namecli'],
       tlds: ['com', 'io'],
       registrars: undefined,
@@ -121,9 +112,9 @@ describe('resolveDirectCliSearchCommand', () => {
     expect(result).toBeNull();
   });
 
-  it('parses multi-name search_domain args', () => {
+  it('parses multi-name search args', () => {
     const result = resolveDirectCliSearchCommand([
-      'search_domain',
+      'search',
       'tldscout',
       'namecli',
       'domscout',
@@ -132,7 +123,7 @@ describe('resolveDirectCliSearchCommand', () => {
     ]);
 
     expect(result).toEqual({
-      command: 'search_domain_multi',
+      command: 'search_multi',
       domains: ['tldscout', 'namecli', 'domscout'],
       tlds: ['com', 'dev', 'ai'],
       registrars: undefined,
@@ -141,14 +132,14 @@ describe('resolveDirectCliSearchCommand', () => {
     });
   });
 
-  it('defaults search_domain to configured allowed tlds', () => {
+  it('defaults search to configured allowed tlds', () => {
     const result = resolveDirectCliSearchCommand([
-      'search_domain',
+      'search',
       'tldscout',
     ]);
 
     expect(result).toEqual({
-      command: 'search_domain',
+      command: 'search',
       input: {
         domain_name: 'tldscout',
         tlds: config.defaultSearchTlds,
@@ -159,9 +150,9 @@ describe('resolveDirectCliSearchCommand', () => {
     });
   });
 
-  it('parses verify mode for search_domain', () => {
+  it('parses verify mode for search', () => {
     const result = resolveDirectCliSearchCommand([
-      'search_domain',
+      'search',
       'tldscout',
       '--tlds',
       'io,sh',
@@ -169,7 +160,7 @@ describe('resolveDirectCliSearchCommand', () => {
     ]);
 
     expect(result).toEqual({
-      command: 'search_domain',
+      command: 'search',
       input: {
         domain_name: 'tldscout',
         tlds: ['io', 'sh'],
@@ -180,9 +171,9 @@ describe('resolveDirectCliSearchCommand', () => {
     });
   });
 
-  it('parses buy alias as purchase_domain', () => {
+  it('parses buy subcommand', () => {
     const result = resolveDirectCliSearchCommand([
-      '--buy',
+      'buy',
       'tldscout.com',
       '--registrar',
       'godaddy',
@@ -190,7 +181,7 @@ describe('resolveDirectCliSearchCommand', () => {
     ]);
 
     expect(result).toEqual({
-      command: 'purchase_domain',
+      command: 'buy',
       input: {
         domain: 'tldscout.com',
         registrar: 'godaddy',
@@ -201,7 +192,7 @@ describe('resolveDirectCliSearchCommand', () => {
     });
   });
 
-  it('parses buy subcommand alias', () => {
+  it('parses buy args when flags come first', () => {
     const result = resolveDirectCliSearchCommand([
       'buy',
       '--registrar',
@@ -210,7 +201,7 @@ describe('resolveDirectCliSearchCommand', () => {
     ]);
 
     expect(result).toEqual({
-      command: 'purchase_domain',
+      command: 'buy',
       input: {
         domain: 'tldscout.com',
         registrar: 'godaddy',

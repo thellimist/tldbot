@@ -49,7 +49,7 @@ curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbo
   -o ~/.codex/skills/tldbot-domain-selector/SKILL.md
 ```
 
-AGENTS fallback:
+Claude Code or AGENTS fallback:
 - read `references/agents-snippet.md`
 - append that snippet to the relevant `AGENTS.md`
 
@@ -101,7 +101,7 @@ Once the user reacts to the name directions, search broadly.
 Good default:
 
 ```bash
-tldbot search_domain <name1> <name2> <name3> --tlds com,io,dev,app,co,net,ai,sh,so,bot
+tldbot search <name1> <name2> <name3> --tlds com,io,dev,app,co,net,ai,sh,so,bot
 ```
 
 If many candidates are involved, keep the first pass fast.
@@ -121,7 +121,7 @@ Only verify the names the user actually likes.
 For high-rate-limit TLDs, use:
 
 ```bash
-tldbot search_domain <name> --tlds ai,io,sh,app,dev,bot --verify
+tldbot search <name> --tlds ai,io,sh,app,dev,bot --verify
 ```
 
 Mention clearly when a prior result was provisional and is now being confirmed.
@@ -139,7 +139,7 @@ tldbot check_socials <name>
 For finalists:
 
 ```bash
-tldbot --buy <domain.tld> --price
+tldbot buy <domain.tld> --price
 ```
 
 Only suggest buying after the user has shown conviction.

@@ -1,5 +1,5 @@
 /**
- * search_domain Tool - Primary Domain Search.
+ * search Tool - Primary Domain Search.
  *
  * This is the main entry point for domain availability checks.
  * Designed for magic first moment: works with zero configuration.
@@ -11,7 +11,7 @@ import { searchDomain } from '../services/domain-search.js';
 import { wrapError } from '../utils/errors.js';
 
 /**
- * Input schema for search_domain.
+ * Input schema for search.
  */
 export const searchDomainSchema = z.object({
   domain_name: z
@@ -47,7 +47,7 @@ export type SearchDomainInput = z.infer<typeof searchDomainSchema>;
  * Tool definition for MCP.
  */
 export const searchDomainTool = {
-  name: 'search_domain',
+  name: 'search',
   description: `Search for domain availability, resale status, and pricing across multiple TLDs.
 
 Returns:
@@ -59,8 +59,8 @@ Returns:
 - Human-readable insights and next steps
 
 Examples:
-- search_domain("vibecoding") → checks vibecoding across the configured default TLD set
-- search_domain("myapp", ["com", "io"]) → checks specific TLDs`,
+- search("vibecoding") → checks vibecoding across the configured default TLD set
+- search("myapp", ["com", "io"]) → checks specific TLDs`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -93,7 +93,7 @@ Examples:
 };
 
 /**
- * Execute the search_domain tool.
+ * Execute the search tool.
  */
 export async function executeSearchDomain(
   input: SearchDomainInput,

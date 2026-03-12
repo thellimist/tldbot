@@ -926,7 +926,7 @@ function generateNextSteps(
     );
     if (suggestedTlds.length > 0) {
       nextSteps.push(
-        `${CLI_COMMAND} search_domain ${baseName} --tlds ${suggestedTlds.slice(0, 3).join(',')}`,
+        `${CLI_COMMAND} search ${baseName} --tlds ${suggestedTlds.slice(0, 3).join(',')}`,
       );
     }
 
@@ -937,7 +937,7 @@ function generateNextSteps(
       const alternatives = suggestPremiumAlternatives(firstPremium.domain);
       if (alternatives.length > 0) {
         nextSteps.push(
-          `${CLI_COMMAND} search_domain ${alternatives[0]} --tlds ${available[0]!.domain.split('.').pop()!}`,
+          `${CLI_COMMAND} search ${alternatives[0]} --tlds ${available[0]!.domain.split('.').pop()!}`,
         );
       }
     }
@@ -948,13 +948,13 @@ function generateNextSteps(
 
   if (taken.length > 0 && available.length === 0) {
     const baseName = baseNameOverride || taken[0]!.domain.split('.')[0]!;
-    nextSteps.push(`${CLI_COMMAND} search_domain ${baseName} --tlds app,net,org`);
+    nextSteps.push(`${CLI_COMMAND} search ${baseName} --tlds app,net,org`);
   }
 
   if (forSale.length > 0 && available.length === 0) {
     const listing = forSale[0]!;
-    nextSteps.push(`${CLI_COMMAND} --buy ${listing.domain}`);
-    nextSteps.push(`${CLI_COMMAND} --buy ${listing.domain} --price`);
+    nextSteps.push(`${CLI_COMMAND} buy ${listing.domain}`);
+    nextSteps.push(`${CLI_COMMAND} buy ${listing.domain} --price`);
   }
 
   if (available.length > 0) {
@@ -965,10 +965,10 @@ function generateNextSteps(
         )
       : available[0]!;
 
-    nextSteps.push(`${CLI_COMMAND} --buy ${best.domain} --price`);
-    nextSteps.push(`${CLI_COMMAND} --buy ${best.domain} --registrar namecheap`);
-    nextSteps.push(`${CLI_COMMAND} --buy ${best.domain} --registrar godaddy`);
-    nextSteps.push(`${CLI_COMMAND} --buy ${best.domain} --registrar cloudflare`);
+    nextSteps.push(`${CLI_COMMAND} buy ${best.domain} --price`);
+    nextSteps.push(`${CLI_COMMAND} buy ${best.domain} --registrar namecheap`);
+    nextSteps.push(`${CLI_COMMAND} buy ${best.domain} --registrar godaddy`);
+    nextSteps.push(`${CLI_COMMAND} buy ${best.domain} --registrar cloudflare`);
   }
 
   if (nonVerifiedDomains.length > 0) {
@@ -980,7 +980,7 @@ function generateNextSteps(
     )];
     if (baseName && verifyTlds.length > 0) {
       nextSteps.push(
-        `${CLI_COMMAND} search_domain ${baseName} --tlds ${verifyTlds.join(',')} --verify`,
+        `${CLI_COMMAND} search ${baseName} --tlds ${verifyTlds.join(',')} --verify`,
       );
     }
   }

@@ -18,7 +18,7 @@ export const purchaseDomainSchema = z.object({
 export type PurchaseDomainInput = z.infer<typeof purchaseDomainSchema>;
 
 export const purchaseDomainTool = {
-  name: 'purchase_domain',
+  name: 'buy',
   description: `Resolve the next buy action for a domain.
 
 Supported registrars:

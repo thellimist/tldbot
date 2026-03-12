@@ -22,7 +22,7 @@ function stripGlobalArgs(args: string[]): string[] {
 function isCliInvocation(args: string[], invokedAs: string | undefined = process.argv[1]): boolean {
   const normalizedArgs = stripGlobalArgs(args);
   const binaryName = invokedAs ? invokedAs.split('/').pop()?.toLowerCase() : '';
-  if (binaryName === 'domain_search' || binaryName === 'search_domain') {
+  if (binaryName === 'tldbot' && normalizedArgs.length > 0) {
     return true;
   }
 
@@ -39,10 +39,8 @@ function isCliInvocation(args: string[], invokedAs: string | undefined = process
     command === 'version' ||
     command === 'help' ||
     command === 'skills' ||
-    command === '--buy' ||
     command === 'buy' ||
-    command === 'search_domain' ||
-    command === 'domain_search' ||
+    command === 'search' ||
     command === 'check_socials' ||
     command !== 'mcp'
   );

@@ -32,20 +32,20 @@ describe('formatToolResult', () => {
     const payload: SearchResponse = {
       results: [result],
       insights: [],
-      next_steps: ['tldbot --buy example.com --registrar namecheap'],
+      next_steps: ['tldbot buy example.com --registrar namecheap'],
       non_verified_domains: ['example.io'],
       from_cache: false,
       duration_ms: 10,
     };
 
-    const text = formatToolResult('search_domain', payload, 'table');
+    const text = formatToolResult('search', payload, 'table');
 
     expect(text).toContain('| Domain | Status | Where |');
     expect(text).toContain('Available');
     expect(text).toContain('porkbun');
     expect(text).toContain('Non-verified: example.io');
     expect(text).toContain('Next commands');
-    expect(text).toContain('tldbot --buy example.com --registrar namecheap');
+    expect(text).toContain('tldbot buy example.com --registrar namecheap');
     expect(text).not.toContain('Insights:');
   });
 
@@ -62,16 +62,16 @@ describe('formatToolResult', () => {
         {
           registrar: 'namecheap',
           checkout_url: 'https://www.namecheap.com/domains/registration/results/?domain=tldscout.com',
-          checkout_command: 'tldbot --buy tldscout.com --registrar namecheap',
+          checkout_command: 'tldbot buy tldscout.com --registrar namecheap',
         },
       ],
     };
 
-    const text = formatToolResult('purchase_domain', payload, 'table');
+    const text = formatToolResult('buy', payload, 'table');
 
     expect(text).toContain('Buy tldscout.com');
     expect(text).toContain('Estimated USD 12.44 (estimated) | Renew USD 12.99 (estimated)');
-    expect(text).toContain('tldbot --buy tldscout.com --registrar namecheap');
+    expect(text).toContain('tldbot buy tldscout.com --registrar namecheap');
     expect(text).not.toContain('https://www.namecheap.com/');
   });
 
@@ -96,7 +96,7 @@ describe('formatToolResult', () => {
       },
     };
 
-    const text = formatToolResult('purchase_domain', payload, 'table');
+    const text = formatToolResult('buy', payload, 'table');
 
     expect(text).toContain('Buy domscout.com from HugeDomains');
     expect(text).toContain('USD 10195.00');

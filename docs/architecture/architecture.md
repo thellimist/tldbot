@@ -32,7 +32,7 @@ Interactive behavior:
 
 ## Search flow
 
-1. User runs `tldbot search_domain ...` or an MCP client calls `search_domain`.
+1. User runs `tldbot search ...` or an MCP client calls `search`.
 2. Input is normalized by the CLI parser or MCP tool adapter.
 3. The shared tool registry dispatches the tool executor.
 4. `services/domain-search.ts` expands names and TLDs into concrete checks.
@@ -69,7 +69,7 @@ Interactive behavior:
 
 ## Buy flow
 
-1. User runs `tldbot --buy example.com` or MCP calls `purchase_domain`.
+1. User runs `tldbot buy example.com` or MCP calls `buy`.
 2. `services/purchase.ts` resolves one shared purchase result.
 3. `for_sale` domains prefer the detected marketplace path.
 4. `available` domains return registrar-specific checkout commands.

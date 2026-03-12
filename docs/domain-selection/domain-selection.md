@@ -125,7 +125,7 @@ Run a wide first pass with `tldbot` before debating subtle branding questions.
 Example:
 
 ```bash
-tldbot search_domain domagent domainmcp searchmcp tldagent dnsagent --tlds com,io,dev,app,co,net,ai,sh,so,bot
+tldbot search domagent domainmcp searchmcp tldagent dnsagent --tlds com,io,dev,app,co,net,ai,sh,so,bot
 ```
 
 Interpret the first pass like this:
@@ -151,7 +151,7 @@ For hot TLDs such as `.ai`, `.io`, `.sh`, `.app`, `.dev`, and sometimes `.bot`:
 Example:
 
 ```bash
-tldbot search_domain tldbot tldagent domainmcp --tlds ai,io,sh,app,dev --verify
+tldbot search tldbot tldagent domainmcp --tlds ai,io,sh,app,dev --verify
 ```
 
 That mirrors the right product behavior:
@@ -174,7 +174,7 @@ tldbot check_socials tldbot
 If the name is available:
 
 ```bash
-tldbot --buy tldbot.com --price
+tldbot buy tldbot.com --price
 ```
 
 If the name is for sale:
