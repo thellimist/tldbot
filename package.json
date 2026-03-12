@@ -1,0 +1,70 @@
+{
+  "name": "tldbot",
+  "version": "0.0.1",
+  "mcpName": "io.github.thellimist/tldbot",
+  "description": "CLI-first domain finder for AI agents. Search domains, detect resale listings, check socials, and open the next buy command.",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "bin": {
+    "tldbot": "bin/tldbot"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "tldbot.config.example.json"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "test:watch": "jest --watch",
+    "coverage": "jest --coverage",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "domain",
+    "domain-search",
+    "rdap",
+    "whois",
+    "tld",
+    "cli"
+  ],
+  "author": "Kan Yilmaz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thellimist/tldbot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thellimist/tldbot/issues"
+  },
+  "homepage": "https://github.com/thellimist/tldbot#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "axios": "^1.6.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.10.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
+  }
+}

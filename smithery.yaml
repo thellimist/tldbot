@@ -1,0 +1,18 @@
+# Smithery configuration for tldbot
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      config_path:
+        type: string
+        description: "Optional path to a tldbot JSON config file."
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: config.config_path
+        ? ['dist/main.js', '--config', config.config_path]
+        : ['dist/main.js']
+    })

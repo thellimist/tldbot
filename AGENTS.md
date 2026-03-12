@@ -1,0 +1,2 @@
+- Always use Context7 CLI when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask. Ex: `ctx7 library bun`, `ctx7 docs /oven-sh/bun`
+- Update CHANGELOG.md before commit

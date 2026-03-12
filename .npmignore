@@ -1,0 +1,10 @@
+# `files` in package.json is the primary publish filter.
+# Keep this as a safety net for local npm pack runs.
+
+coverage/
+dist/**/*.map
+docs/
+tests/
+src/
+.github/
+AGENTS.md
