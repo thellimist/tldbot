@@ -1,8 +1,8 @@
+# tldbot
+
 <p align="center">
   <img src="assets/banner.png" alt="tldbot banner" width="100%">
 </p>
-
-# tldbot
 
 CLI-first domain finder for AI agents like Claude Code and Codex.
 
@@ -86,10 +86,14 @@ Verification states:
 
 ## Config
 
-Optional. Most users do not need this.
-`--config` means: use this JSON settings file for this run.
 
 ```bash
+tldbot config show
+tldbot config set defaultSearchTlds com,io,dev,app,co,net,ai,sh,so
+tldbot config set allowedTlds com,io,dev,app,co,net,org,xyz,ai,sh,so,tools,studio,company,me,cc,bot
+
+# Use new config path
+tldbot config path ./tldbot.config.json
 tldbot --config ./tldbot.config.json search tldscout
 ```
 

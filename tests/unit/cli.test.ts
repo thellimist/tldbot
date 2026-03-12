@@ -68,6 +68,45 @@ describe('resolveDirectCliSearchCommand', () => {
     });
   });
 
+  it('parses config show', () => {
+    const result = resolveDirectCliSearchCommand(['config', 'show']);
+
+    expect(result).toEqual({
+      command: 'config_show',
+      output: 'table',
+    });
+  });
+
+  it('parses config set', () => {
+    const result = resolveDirectCliSearchCommand([
+      'config',
+      'set',
+      'defaultSearchTlds',
+      'com,io,dev',
+    ]);
+
+    expect(result).toEqual({
+      command: 'config_set',
+      key: 'defaultSearchTlds',
+      value: 'com,io,dev',
+      output: 'table',
+    });
+  });
+
+  it('parses config path', () => {
+    const result = resolveDirectCliSearchCommand([
+      'config',
+      'path',
+      './tldbot.config.json',
+    ]);
+
+    expect(result).toEqual({
+      command: 'config_path',
+      path: './tldbot.config.json',
+      output: 'table',
+    });
+  });
+
   it('parses version flag', () => {
     const result = resolveDirectCliSearchCommand(['--version']);
 

@@ -1,10 +1,16 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { formatToolResult } from './utils/format.js';
 import type { PurchaseResult, SearchResponse } from './types.js';
 import { ConcurrencyLimiter } from './utils/concurrency.js';
-import { config } from './config.js';
+import {
+  config,
+  getActiveConfigPath,
+  loadRawConfigFile,
+  saveRawConfigFile,
+  setPersistedConfigPath,
+} from './config.js';
 import { CLI_COMMAND } from './utils/cli-command.js';
 import { setLogOutputMode } from './utils/logger.js';
 import { CLI_VERSION } from './utils/version.js';
@@ -12,9 +18,10 @@ import { executeRegisteredTool } from './app/tool-registry.js';
 import type { SearchDomainInput } from './tools/search_domain.js';
 import type { CheckSocialsInput } from './tools/check_socials.js';
 import type { PurchaseDomainInput } from './tools/purchase_domain.js';
+import type { Config } from './types.js';
 
 type OutputMode = 'json' | 'table';
-type HelpTopic = 'top' | 'search' | 'check_socials' | 'buy' | 'skills';
+type HelpTopic = 'top' | 'search' | 'check_socials' | 'buy' | 'skills' | 'config';
 
 const MULTI_SEARCH_CONCURRENCY = 8;
 const KNOWN_VALUE_FLAGS = new Set([
@@ -42,6 +49,8 @@ function normalizeHelpTopic(value: string | undefined): HelpTopic {
     case 'skills':
     case 'domain-selection':
       return 'skills';
+    case 'config':
+      return 'config';
     default:
       return 'top';
   }
@@ -130,6 +139,29 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     ].join('\n');
   }
 
+  if (topic === 'config') {
+    return [
+      `${CLI_COMMAND} config`,
+      '',
+      'Show or update saved CLI settings.',
+      '',
+      'Usage:',
+      `  ${CLI_COMMAND} config show`,
+      `  ${CLI_COMMAND} config set <key> <value>`,
+      `  ${CLI_COMMAND} config path [path/to/config.json]`,
+      '',
+      'Keys:',
+      '  defaultSearchTlds     CSV list of default search TLDs',
+      '  allowedTlds           CSV list of allowed TLDs',
+      '  cache.availabilityTtl Seconds before search cache expires',
+      '',
+      'Examples:',
+      `  ${CLI_COMMAND} config set defaultSearchTlds com,io,dev,app,co,net,ai,sh,so`,
+      `  ${CLI_COMMAND} config set allowedTlds com,io,dev,app,co,net,org,xyz,ai,sh,so,bot`,
+      `  ${CLI_COMMAND} config path ./tldbot.config.json`,
+    ].join('\n');
+  }
+
   return [
     `${CLI_COMMAND} ${CLI_VERSION}`,
     '',
@@ -143,6 +175,7 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     '  search          Search one or more names across TLDs',
     '  check_socials   Check social handle availability for a shortlist name',
     '  buy             Show the next buy command for a domain',
+    '  config          Show or update saved CLI settings',
     '  skills          Print the installable domain-selection skill',
     '  help            Show top-level or command help',
     '  mcp             Start the stdio MCP server explicitly',
@@ -157,6 +190,7 @@ function renderHelpText(topic: HelpTopic = 'top'): string {
     `  ${CLI_COMMAND} search tldbot --tlds ai,io,sh --verify`,
     `  ${CLI_COMMAND} check_socials tldbot`,
     `  ${CLI_COMMAND} buy tldbot.com --price`,
+    `  ${CLI_COMMAND} config set defaultSearchTlds com,io,dev,app,co,net,ai,sh,so`,
     `  ${CLI_COMMAND} skills`,
     '',
     'Agent workflow:',
@@ -181,6 +215,13 @@ export type DirectCliCommand =
   | {
       command: 'skills';
       output: 'table';
+    }
+  | {
+      command: 'config_show' | 'config_set' | 'config_path';
+      output: 'table';
+      key?: string;
+      value?: string;
+      path?: string;
     }
   | {
       command: 'search';
@@ -373,6 +414,86 @@ function readSkillMarkdown(): string {
   return readFileSync(SKILL_PATH, 'utf8');
 }
 
+function setNestedValue(target: Record<string, unknown>, keyPath: string, value: unknown): void {
+  const parts = keyPath.split('.');
+  let cursor = target;
+
+  for (let index = 0; index < parts.length - 1; index += 1) {
+    const part = parts[index]!;
+    const current = cursor[part];
+    if (!current || typeof current !== 'object' || Array.isArray(current)) {
+      cursor[part] = {};
+    }
+    cursor = cursor[part] as Record<string, unknown>;
+  }
+
+  cursor[parts[parts.length - 1]!] = value;
+}
+
+function parseConfigValue(key: string, value: string): unknown {
+  if (key === 'defaultSearchTlds' || key === 'allowedTlds') {
+    return value
+      .split(',')
+      .map((item) => item.trim().replace(/^\./, ''))
+      .filter(Boolean);
+  }
+
+  if (key === 'cache.availabilityTtl') {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new Error('cache.availabilityTtl must be a positive number of seconds.');
+    }
+    return parsed;
+  }
+
+  if (
+    key === 'pricingApi.enabled' ||
+    key === 'aftermarket.sedoEnabled' ||
+    key === 'aftermarket.nsEnabled' ||
+    key === 'checkout.enabled'
+  ) {
+    if (value !== 'true' && value !== 'false') {
+      throw new Error(`${key} must be true or false.`);
+    }
+    return value === 'true';
+  }
+
+  return value;
+}
+
+function updateConfigFile(key: string, value: string): string {
+  const configPath = getActiveConfigPath();
+  const raw = loadRawConfigFile(configPath) as Record<string, unknown>;
+  setNestedValue(raw, key, parseConfigValue(key, value));
+  saveRawConfigFile(configPath, raw as Partial<Config>);
+  return configPath;
+}
+
+function moveConfigPath(nextPath: string): string {
+  const currentPath = getActiveConfigPath();
+  const resolvedPath = resolve(process.cwd(), nextPath);
+
+  mkdirSync(dirname(resolvedPath), { recursive: true });
+
+  if (existsSync(currentPath) && currentPath !== resolvedPath) {
+    renameSync(currentPath, resolvedPath);
+  }
+
+  setPersistedConfigPath(resolvedPath);
+  return resolvedPath;
+}
+
+function renderConfigShow(): string {
+  return JSON.stringify(
+    {
+      path: getActiveConfigPath(),
+      config,
+    },
+    null,
+    2,
+  );
+}
+
 function openUrlInBrowser(url: string): void {
   const command =
     process.platform === 'darwin'
@@ -404,6 +525,7 @@ export function resolveDirectCliSearchCommand(
     'analyze_project',
     'hunt_domains',
     'help',
+    'config',
     'skills',
     'buy',
     'mcp',
@@ -446,6 +568,49 @@ export function resolveDirectCliSearchCommand(
     };
   }
 
+  if (command === 'config') {
+    if (hasHelpFlag(commandArgs)) {
+      return {
+        command: 'help',
+        topic: 'config',
+        output: 'table',
+      };
+    }
+
+    const subcommand = commandArgs[1];
+
+    if (!subcommand || subcommand === 'show') {
+      return {
+        command: 'config_show',
+        output: 'table',
+      };
+    }
+
+    if (subcommand === 'set') {
+      const key = commandArgs[2];
+      const value = commandArgs[3];
+      if (!key || !value) {
+        throw new Error(renderHelpText('config'));
+      }
+      return {
+        command: 'config_set',
+        key,
+        value,
+        output: 'table',
+      };
+    }
+
+    if (subcommand === 'path' || subcommand === '--path') {
+      return {
+        command: 'config_path',
+        path: commandArgs[2],
+        output: 'table',
+      };
+    }
+
+    throw new Error(renderHelpText('config'));
+  }
+
   if (hasHelpFlag(commandArgs) || command === '--help' || command === '-h') {
     if (command === 'search') {
       return { command: 'help', topic: 'search', output: 'table' };
@@ -458,6 +623,9 @@ export function resolveDirectCliSearchCommand(
     }
     if (command === 'skills') {
       return { command: 'skills', output: 'table' };
+    }
+    if (command === 'config') {
+      return { command: 'help', topic: 'config', output: 'table' };
     }
     return {
       command: 'help',
@@ -544,34 +712,43 @@ export async function tryHandleDirectCliCommand(
 
   setLogOutputMode('plain');
 
-  const result =
-    command.command === 'help'
-      ? renderHelpText(command.topic)
-      : command.command === 'version'
-        ? CLI_VERSION
-        : command.command === 'skills'
-          ? readSkillMarkdown()
-        : command.command === 'search'
-          ? await executeRegisteredTool('search', command.input as SearchDomainInput)
-          : command.command === 'search_multi'
-            ? await (async () => {
-                const limiter = new ConcurrencyLimiter(MULTI_SEARCH_CONCURRENCY);
-                return Promise.all(
-                  command.domains.map((domain) =>
-                    limiter.run(() =>
-                      executeRegisteredTool('search', {
-                        domain_name: domain,
-                        tlds: command.tlds,
-                        registrars: command.registrars,
-                        verification_mode: command.verification_mode,
-                      }),
-                    ),
-                  ),
-                );
-              })()
-            : command.command === 'check_socials'
-              ? await executeRegisteredTool('check_socials', command.input as CheckSocialsInput)
-              : await executeRegisteredTool('buy', command.input as PurchaseDomainInput);
+  let result: unknown;
+
+  if (command.command === 'help') {
+    result = renderHelpText(command.topic);
+  } else if (command.command === 'version') {
+    result = CLI_VERSION;
+  } else if (command.command === 'skills') {
+    result = readSkillMarkdown();
+  } else if (command.command === 'config_show') {
+    result = renderConfigShow();
+  } else if (command.command === 'config_set') {
+    result = `Saved ${command.key} to ${updateConfigFile(command.key!, command.value!)}`;
+  } else if (command.command === 'config_path') {
+    result = command.path ? `Saved config path: ${moveConfigPath(command.path)}` : getActiveConfigPath();
+  } else if (command.command === 'search') {
+    result = await executeRegisteredTool('search', command.input as SearchDomainInput);
+  } else if (command.command === 'search_multi') {
+    const limiter = new ConcurrencyLimiter(MULTI_SEARCH_CONCURRENCY);
+    result = await Promise.all(
+      command.domains.map((domain) =>
+        limiter.run(() =>
+          executeRegisteredTool('search', {
+            domain_name: domain,
+            tlds: command.tlds,
+            registrars: command.registrars,
+            verification_mode: command.verification_mode,
+          }),
+        ),
+      ),
+    );
+  } else if (command.command === 'check_socials') {
+    result = await executeRegisteredTool('check_socials', command.input as CheckSocialsInput);
+  } else if (command.command === 'buy') {
+    result = await executeRegisteredTool('buy', command.input as PurchaseDomainInput);
+  } else {
+    throw new Error('Unknown CLI command.');
+  }
 
   if (command.command === 'buy' && command.openBrowser) {
     const purchase = result as PurchaseResult;
@@ -582,7 +759,12 @@ export async function tryHandleDirectCliCommand(
   }
 
   const output =
-    command.command === 'help' || command.command === 'version' || command.command === 'skills'
+    command.command === 'help' ||
+    command.command === 'version' ||
+    command.command === 'skills' ||
+    command.command === 'config_show' ||
+    command.command === 'config_set' ||
+    command.command === 'config_path'
       ? (result as string)
       : command.command === 'search_multi' && command.output === 'json'
         ? formatMultiSearchJson(

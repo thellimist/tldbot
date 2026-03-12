@@ -7,7 +7,13 @@
 
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import type { CheckoutRegistrar, Config } from './types.js';
 
 type DeepPartial<T> = {
@@ -55,6 +61,10 @@ export const DEFAULT_CONFIG: Config = {
   },
 };
 
+const DEFAULT_STATE_DIR = join(homedir(), '.tldbot');
+const DEFAULT_CONFIG_PATH = join(DEFAULT_STATE_DIR, 'config.json');
+const CONFIG_PATH_POINTER = join(DEFAULT_STATE_DIR, 'config-path');
+
 function getArgValue(flag: string, args: string[] = process.argv.slice(2)): string | undefined {
   const index = args.indexOf(flag);
   if (index === -1) return undefined;
@@ -69,12 +79,33 @@ export function resolveConfigPath(args: string[] = process.argv.slice(2)): strin
   return resolve(process.cwd(), configPath);
 }
 
-export function getRuntimeStateDir(args: string[] = process.argv.slice(2)): string {
-  const configPath = resolveConfigPath(args);
-  if (configPath) {
-    return join(dirname(configPath), '.tldbot');
+export function getDefaultConfigPath(): string {
+  return DEFAULT_CONFIG_PATH;
+}
+
+function readPersistedConfigPath(): string | undefined {
+  if (!existsSync(CONFIG_PATH_POINTER)) {
+    return undefined;
   }
-  return join(homedir(), '.tldbot');
+
+  const value = readFileSync(CONFIG_PATH_POINTER, 'utf8').trim();
+  if (!value) {
+    return undefined;
+  }
+
+  return resolve(value);
+}
+
+export function getActiveConfigPath(args: string[] = process.argv.slice(2)): string {
+  return resolveConfigPath(args) || readPersistedConfigPath() || DEFAULT_CONFIG_PATH;
+}
+
+export function getRuntimeStateDir(args: string[] = process.argv.slice(2)): string {
+  const configPath = getActiveConfigPath(args);
+  if (configPath === DEFAULT_CONFIG_PATH) {
+    return DEFAULT_STATE_DIR;
+  }
+  return join(dirname(configPath), '.tldbot');
 }
 
 function mergeDeep<T extends object>(base: T, override: DeepPartial<T> | undefined): T {
@@ -188,8 +219,8 @@ function validateExternalUrl(
 }
 
 function loadConfigOverrides(): DeepPartial<Config> {
-  const configPath = resolveConfigPath();
-  if (!configPath) {
+  const configPath = getActiveConfigPath();
+  if (!existsSync(configPath)) {
     return {};
   }
 
@@ -230,4 +261,29 @@ export function getAvailableSources(): string[] {
   if (config.pricingApi.enabled) sources.push('pricing_api');
   sources.push('rdap', 'whois');
   return sources;
+}
+
+export function loadRawConfigFile(configPath: string): DeepPartial<Config> {
+  if (!existsSync(configPath)) {
+    return {};
+  }
+
+  return JSON.parse(readFileSync(configPath, 'utf8')) as DeepPartial<Config>;
+}
+
+export function saveRawConfigFile(configPath: string, input: DeepPartial<Config>): void {
+  mkdirSync(dirname(configPath), { recursive: true });
+  writeFileSync(configPath, `${JSON.stringify(input, null, 2)}\n`, 'utf8');
+}
+
+export function setPersistedConfigPath(configPath: string): void {
+  mkdirSync(DEFAULT_STATE_DIR, { recursive: true });
+  const resolved = resolve(configPath);
+
+  if (resolved === DEFAULT_CONFIG_PATH) {
+    rmSync(CONFIG_PATH_POINTER, { force: true });
+    return;
+  }
+
+  writeFileSync(CONFIG_PATH_POINTER, `${resolved}\n`, 'utf8');
 }

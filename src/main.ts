@@ -38,6 +38,7 @@ function isCliInvocation(args: string[], invokedAs: string | undefined = process
     command === '-V' ||
     command === 'version' ||
     command === 'help' ||
+    command === 'config' ||
     command === 'skills' ||
     command === 'buy' ||
     command === 'search' ||
