@@ -456,7 +456,7 @@ async function textBasedWhoisCheck(
     const response = await axios.get(`https://who.is/whois/${fullDomain}`, {
       timeout: WHOIS_TIMEOUT_MS,
       headers: {
-        'User-Agent': 'Domain-Search-MCP/1.0',
+        'User-Agent': 'tldbot/0.0.1',
       },
     });
 

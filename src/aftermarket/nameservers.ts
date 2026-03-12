@@ -167,7 +167,7 @@ async function fetchListingPrice(
       redirect: 'follow',
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Domain-Search-MCP/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; tldbot/0.0.1)',
       },
     });
 
@@ -278,7 +278,7 @@ async function detectHugeDomainsLander(
       redirect: 'follow',
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Domain-Search-MCP/1.0',
+        'User-Agent': 'tldbot/0.0.1',
       },
     });
 

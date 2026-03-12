@@ -2,6 +2,9 @@
  * Unit Tests for TTL Cache.
  */
 
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { TtlCache, domainCacheKey, tldCacheKey, getOrCompute } from '../../src/utils/cache';
 
 describe('TtlCache', () => {
@@ -64,6 +67,21 @@ describe('TtlCache', () => {
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     expect(cache.get('key1')).toBeUndefined();
+  });
+
+  it('should persist entries to disk when a cache file is configured', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'tldbot-cache-'));
+    const persistPath = join(tempDir, 'cache.json');
+    const persistentCache = new TtlCache<string>(60, 100, persistPath);
+
+    persistentCache.set('key1', 'value1');
+
+    const reloadedCache = new TtlCache<string>(60, 100, persistPath);
+    expect(reloadedCache.get('key1')).toBe('value1');
+
+    persistentCache.destroy();
+    reloadedCache.destroy();
+    rmSync(tempDir, { recursive: true, force: true });
   });
 });
 

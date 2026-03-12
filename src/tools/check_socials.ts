@@ -48,7 +48,7 @@ const BROWSER_HEADERS = {
 
 const API_HEADERS = {
   'Accept': 'application/json',
-  'User-Agent': 'Domain-Search-MCP/1.0',
+  'User-Agent': 'tldbot/0.0.1',
 };
 
 const ALL_PLATFORMS = [
@@ -109,7 +109,7 @@ const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
     errorMsg: ['"error": 404'],
     method: 'GET',
     headers: {
-      'User-Agent': 'Domain-Search-MCP/1.0 (checking username availability)',
+      'User-Agent': 'tldbot/0.0.1 (checking username availability)',
     },
     regexCheck: /^[A-Za-z0-9_-]{3,20}$/,
   },

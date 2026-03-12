@@ -5,7 +5,10 @@
  * Reduces API calls and improves response times.
  */
 
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { config } from '../config.js';
+import { getRuntimeStateDir } from '../config.js';
 import { logger } from './logger.js';
 
 interface CacheEntry<T> {
@@ -31,11 +34,18 @@ export class TtlCache<T> {
   private cache = new Map<string, CacheEntry<T>>();
   private readonly defaultTtlMs: number;
   private readonly maxSize: number;
+  private readonly persistPath?: string;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor(defaultTtlSeconds: number = 300, maxSize: number = DEFAULT_MAX_CACHE_SIZE) {
+  constructor(
+    defaultTtlSeconds: number = 300,
+    maxSize: number = DEFAULT_MAX_CACHE_SIZE,
+    persistPath?: string,
+  ) {
     this.defaultTtlMs = defaultTtlSeconds * 1000;
     this.maxSize = maxSize;
+    this.persistPath = persistPath;
+    this.loadFromDisk();
 
     // Clean up expired entries every minute
     // .unref() prevents this interval from keeping the process alive
@@ -59,6 +69,7 @@ export class TtlCache<T> {
     // Check if expired
     if (now > entry.expiresAt) {
       this.cache.delete(key);
+      this.saveToDisk();
       return undefined;
     }
 
@@ -88,6 +99,7 @@ export class TtlCache<T> {
         createdAt: now,
         lastAccessedAt: now,
       });
+      this.saveToDisk();
       return;
     }
 
@@ -109,6 +121,7 @@ export class TtlCache<T> {
       ttl_ms: expiresAt - now,
       size: this.cache.size,
     });
+    this.saveToDisk();
   }
 
   /**
@@ -121,6 +134,7 @@ export class TtlCache<T> {
     if (firstKey !== undefined) {
       this.cache.delete(firstKey);
       logger.debug('Cache LRU eviction', { evicted_key: firstKey });
+      this.saveToDisk();
     }
   }
 
@@ -136,7 +150,11 @@ export class TtlCache<T> {
    * Delete a specific key.
    */
   delete(key: string): boolean {
-    return this.cache.delete(key);
+    const deleted = this.cache.delete(key);
+    if (deleted) {
+      this.saveToDisk();
+    }
+    return deleted;
   }
 
   /**
@@ -145,6 +163,7 @@ export class TtlCache<T> {
   clear(): void {
     this.cache.clear();
     logger.debug('Cache cleared');
+    this.saveToDisk();
   }
 
   /**
@@ -170,6 +189,7 @@ export class TtlCache<T> {
 
     if (removed > 0) {
       logger.debug('Cache cleanup', { removed, remaining: this.cache.size });
+      this.saveToDisk();
     }
   }
 
@@ -182,6 +202,54 @@ export class TtlCache<T> {
       this.cleanupInterval = null;
     }
     this.cache.clear();
+    this.saveToDisk();
+  }
+
+  private loadFromDisk(): void {
+    if (!this.persistPath) {
+      return;
+    }
+
+    try {
+      const raw = readFileSync(this.persistPath, 'utf8');
+      const parsed = JSON.parse(raw) as Record<string, CacheEntry<T>>;
+      const now = Date.now();
+
+      for (const [key, entry] of Object.entries(parsed)) {
+        if (
+          !entry ||
+          typeof entry !== 'object' ||
+          typeof entry.expiresAt !== 'number' ||
+          now > entry.expiresAt
+        ) {
+          continue;
+        }
+
+        this.cache.set(key, entry);
+      }
+    } catch {
+      // Ignore missing/invalid cache files and continue with an empty cache.
+    }
+  }
+
+  private saveToDisk(): void {
+    if (!this.persistPath) {
+      return;
+    }
+
+    try {
+      mkdirSync(dirname(this.persistPath), { recursive: true });
+      writeFileSync(
+        this.persistPath,
+        JSON.stringify(Object.fromEntries(this.cache.entries())),
+        'utf8',
+      );
+    } catch (error) {
+      logger.debug('Cache persist failed', {
+        path: this.persistPath,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 }
 
@@ -205,16 +273,24 @@ export function tldCacheKey(tld: string): string {
   return `tld:${tld.toLowerCase()}`;
 }
 
+const runtimeStateDir = getRuntimeStateDir();
+
 /**
  * Global cache instances.
  */
 export const domainCache = new TtlCache<DomainResult>(
   config.cache.availabilityTtl,
+  DEFAULT_MAX_CACHE_SIZE,
+  join(runtimeStateDir, 'domain-cache.json'),
 );
 
 export const pricingCache = new TtlCache<DomainResult[]>(config.cache.pricingTtl);
 
-export const tldCache = new TtlCache<TLDInfo>(86400); // 24 hours for TLD info
+export const tldCache = new TtlCache<TLDInfo>(
+  86400,
+  DEFAULT_MAX_CACHE_SIZE,
+  join(runtimeStateDir, 'tld-cache.json'),
+);
 
 /**
  * Get or compute a domain result.

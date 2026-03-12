@@ -30,7 +30,7 @@
     "enabled": true
   },
   "cache": {
-    "availabilityTtl": 60,
+    "availabilityTtl": 86400,
     "pricingTtl": 3600,
     "sedoTtl": 3600
   },

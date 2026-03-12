@@ -95,6 +95,15 @@ Use config only when you need to override defaults, such as:
 - default TLDs
 - output format
 
+## Cache
+
+Search results are cached for 24 hours to avoid re-running the same TLD checks.
+
+- default location: `~/.tldbot/`
+- with `--config /path/to/tldbot.config.json`: `/path/to/.tldbot/`
+
+Expired cache entries are dropped automatically.
+
 ## MCP
 
 Run as stdio MCP server:

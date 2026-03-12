@@ -51,6 +51,14 @@ Core runtime:
 4. When a hot source is rate-limited, the result degrades to honest non-verified output instead of blocking the whole run.
 5. The next-step command tells the user how to rerun a strict verify pass.
 
+## Cache strategy
+
+1. In-process TTL caches reduce repeated work during one CLI or MCP run.
+2. Domain and TLD caches also persist to disk for 24 hours.
+3. Default cache path is `~/.tldbot/`.
+4. When `--config` is used, the cache lives beside that config file in `.tldbot/`.
+5. Expired entries are removed automatically on read and cleanup.
+
 ## Buy flow
 
 1. User runs `tldbot --buy example.com` or MCP calls `purchase_domain`.

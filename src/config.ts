@@ -5,8 +5,9 @@
  * built-in defaults.
  */
 
+import { homedir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { CheckoutRegistrar, Config } from './types.js';
 
 type DeepPartial<T> = {
@@ -41,7 +42,7 @@ export const DEFAULT_CONFIG: Config = {
   },
   logLevel: 'info',
   cache: {
-    availabilityTtl: 60,
+    availabilityTtl: 86400,
     pricingTtl: 3600,
     sedoTtl: 3600,
   },
@@ -88,12 +89,20 @@ function getArgValue(flag: string, args: string[] = process.argv.slice(2)): stri
   return args[index + 1];
 }
 
-function resolveConfigPath(args: string[] = process.argv.slice(2)): string | undefined {
+export function resolveConfigPath(args: string[] = process.argv.slice(2)): string | undefined {
   const configPath = getArgValue('--config', args);
   if (!configPath) {
     return undefined;
   }
   return resolve(process.cwd(), configPath);
+}
+
+export function getRuntimeStateDir(args: string[] = process.argv.slice(2)): string {
+  const configPath = resolveConfigPath(args);
+  if (configPath) {
+    return join(dirname(configPath), '.tldbot');
+  }
+  return join(homedir(), '.tldbot');
 }
 
 function mergeDeep<T extends object>(base: T, override: DeepPartial<T> | undefined): T {
