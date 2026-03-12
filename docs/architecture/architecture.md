@@ -25,6 +25,11 @@ Core runtime:
 - `src/server.ts`: stdio MCP bootstrap
 - `src/app/tool-registry.ts`: shared tool registry
 
+Interactive behavior:
+- `tldbot` with no args on a TTY shows CLI help
+- `tldbot` with no args in non-interactive mode starts stdio MCP
+- `tldbot mcp` starts stdio MCP explicitly
+
 ## Search flow
 
 1. User runs `tldbot search_domain ...` or an MCP client calls `search_domain`.

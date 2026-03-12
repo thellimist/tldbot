@@ -57,6 +57,20 @@ The skill is interactive by design:
 
 ## Core Commands
 
+Show help:
+
+```bash
+tldbot --help
+tldbot help search_domain
+tldbot help skills
+```
+
+Show version:
+
+```bash
+tldbot --version
+```
+
 Search default TLDs:
 
 ```bash
@@ -91,6 +105,7 @@ Show buy commands:
 
 ```bash
 tldbot --buy tldscout.com
+tldbot buy tldscout.com
 ```
 
 Show buy commands with pricing context:
@@ -162,6 +177,12 @@ Expired cache entries are dropped automatically.
 ## MCP
 
 Run as stdio MCP server:
+
+```bash
+tldbot mcp
+```
+
+or let `tldbot` default to MCP when launched by an agent in non-interactive mode:
 
 ```bash
 tldbot

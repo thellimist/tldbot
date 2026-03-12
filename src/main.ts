@@ -26,23 +26,49 @@ function isCliInvocation(args: string[], invokedAs: string | undefined = process
     return true;
   }
 
+  if (normalizedArgs.length === 0) {
+    return Boolean(process.stdout.isTTY);
+  }
+
   const command = normalizedArgs[0];
   return Boolean(
     command === '--help' ||
+    command === '-h' ||
+    command === '--version' ||
+    command === '-V' ||
+    command === 'version' ||
     command === 'help' ||
+    command === 'skills' ||
     command === '--buy' ||
+    command === 'buy' ||
     command === 'search_domain' ||
     command === 'domain_search' ||
-    command === 'check_socials'
+    command === 'check_socials' ||
+    command !== 'mcp'
   );
 }
 
+function shouldStartServer(args: string[]): boolean {
+  const normalizedArgs = stripGlobalArgs(args);
+  if (normalizedArgs.length === 0) {
+    return !process.stdout.isTTY;
+  }
+  return normalizedArgs[0] === 'mcp' || normalizedArgs[0] === 'stdio';
+}
+
 async function main(): Promise<void> {
-  if (await tryHandleDirectCliCommand(process.argv.slice(2))) {
+  const args = process.argv.slice(2);
+
+  if (await tryHandleDirectCliCommand(args)) {
     return;
   }
 
-  await startServer();
+  if (shouldStartServer(args)) {
+    await startServer();
+    return;
+  }
+
+  throw new Error('Unknown command. Run `tldbot --help` for usage.');
 }
 
 main().catch((error) => {

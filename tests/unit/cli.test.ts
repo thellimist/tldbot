@@ -53,6 +53,26 @@ describe('resolveDirectCliSearchCommand', () => {
 
     expect(result).toEqual({
       command: 'help',
+      topic: 'top',
+      output: 'table',
+    });
+  });
+
+  it('parses subcommand help', () => {
+    const result = resolveDirectCliSearchCommand(['help', 'skills']);
+
+    expect(result).toEqual({
+      command: 'help',
+      topic: 'skills',
+      output: 'table',
+    });
+  });
+
+  it('parses version flag', () => {
+    const result = resolveDirectCliSearchCommand(['--version']);
+
+    expect(result).toEqual({
+      command: 'version',
       output: 'table',
     });
   });
@@ -72,6 +92,26 @@ describe('resolveDirectCliSearchCommand', () => {
         platforms: ['github', 'x', 'npm'],
       },
       output: 'table',
+    });
+  });
+
+  it('parses search_domain args when flags come before names', () => {
+    const result = resolveDirectCliSearchCommand([
+      'search_domain',
+      '--tlds',
+      'com,io',
+      'tldscout',
+      'namecli',
+      '--json',
+    ]);
+
+    expect(result).toEqual({
+      command: 'search_domain_multi',
+      domains: ['tldscout', 'namecli'],
+      tlds: ['com', 'io'],
+      registrars: undefined,
+      verification_mode: 'smart',
+      output: 'json',
     });
   });
 
@@ -158,6 +198,26 @@ describe('resolveDirectCliSearchCommand', () => {
       output: 'table',
       openBrowser: true,
       showPrice: true,
+    });
+  });
+
+  it('parses buy subcommand alias', () => {
+    const result = resolveDirectCliSearchCommand([
+      'buy',
+      '--registrar',
+      'godaddy',
+      'tldscout.com',
+    ]);
+
+    expect(result).toEqual({
+      command: 'purchase_domain',
+      input: {
+        domain: 'tldscout.com',
+        registrar: 'godaddy',
+      },
+      output: 'table',
+      openBrowser: true,
+      showPrice: false,
     });
   });
 });
