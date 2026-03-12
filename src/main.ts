@@ -28,6 +28,8 @@ function isCliInvocation(args: string[], invokedAs: string | undefined = process
 
   const command = normalizedArgs[0];
   return Boolean(
+    command === '--help' ||
+    command === 'help' ||
     command === '--buy' ||
     command === 'search_domain' ||
     command === 'domain_search' ||

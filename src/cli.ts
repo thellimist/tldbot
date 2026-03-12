@@ -11,6 +11,23 @@ import { setLogOutputMode } from './utils/logger.js';
 import { executeRegisteredTool } from './app/tool-registry.js';
 import type { PurchaseDomainInput } from './tools/purchase_domain.js';
 
+function renderHelpText(): string {
+  return [
+    'tldbot',
+    '',
+    'CLI-first domain finder for AI agents.',
+    '',
+    'Commands:',
+    `  ${CLI_COMMAND} search_domain <name...> [--tlds com,io,dev] [--verify|--fast] [--json]`,
+    `  ${CLI_COMMAND} check_socials <name> [--platforms github,x,reddit] [--json]`,
+    `  ${CLI_COMMAND} --buy <domain.tld> [--registrar namecheap|godaddy|cloudflare] [--price] [--json]`,
+    '',
+    'Global flags:',
+    `  ${CLI_COMMAND} --config /path/to/tldbot.config.json ...`,
+    `  ${CLI_COMMAND} --help`,
+  ].join('\n');
+}
+
 export interface DirectCliSearchCommand {
   command: 'search_domain' | 'check_socials';
   input: SearchDomainInput;
@@ -24,6 +41,10 @@ export interface DirectCliSocialCommand {
 }
 
 export type DirectCliCommand =
+  | {
+      command: 'help';
+      output: 'table';
+    }
   | {
       command: 'search_domain';
       input: SearchDomainInput;
@@ -253,6 +274,13 @@ export function resolveDirectCliSearchCommand(
   }
 
   const command = commandArgs[0];
+  if (command === '--help' || command === 'help') {
+    return {
+      command: 'help',
+      output: 'table',
+    };
+  }
+
   if (command === '--buy') {
     const domain = commandArgs[1];
     if (!domain) {
@@ -338,7 +366,9 @@ export async function tryHandleDirectCliCommand(
   setLogOutputMode('plain');
 
   const result =
-    command.command === 'search_domain'
+    command.command === 'help'
+      ? renderHelpText()
+      : command.command === 'search_domain'
       ? await executeRegisteredTool('search_domain', command.input as SearchDomainInput)
       : command.command === 'search_domain_multi'
       ? await (async () => {
@@ -369,7 +399,9 @@ export async function tryHandleDirectCliCommand(
   }
 
   const output =
-    command.command === 'search_domain_multi' && command.output === 'json'
+    command.command === 'help'
+      ? (result as string)
+      : command.command === 'search_domain_multi' && command.output === 'json'
       ? formatMultiSearchJson(
           command.domains,
           command.tlds || config.defaultSearchTlds,

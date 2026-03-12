@@ -16,6 +16,9 @@ read_when:
 
 Both use the same shared application layer.
 
+The repo also ships an installable skill in `skills/tldbot-domain-selector/`.
+That skill is guidance and workflow, not runtime code.
+
 Core runtime:
 - `src/main.ts`: entrypoint
 - `src/cli.ts`: direct CLI parsing and local rendering

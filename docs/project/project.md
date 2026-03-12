@@ -17,6 +17,7 @@ It helps agents and shell users:
 2. Distinguish `available`, `for_sale`, and `taken`.
 3. Check a focused set of social handles.
 4. Get the next buy command to run.
+5. Install a domain-selection skill for interactive naming workflows.
 
 The CLI is the primary product surface.
 MCP is a thin adapter over the same runtime.
@@ -37,6 +38,7 @@ MCP is a thin adapter over the same runtime.
 - social handle checks
 - buy command generation
 - stdio MCP support
+- installable domain-selection skill
 
 ## Out of scope
 

@@ -4,56 +4,111 @@ CLI-first domain finder for AI agents.
 
 `tldbot` checks domain availability, distinguishes `available` vs `for_sale` vs `taken`, can verify a focused set of social handles, and gives the next buy command to run.
 
+## Install
+
+One-off CLI:
+
+```bash
+npx -y tldbot@latest --help
+```
+
+Global CLI:
+
+```bash
+npm install -g tldbot
+```
+
+Homebrew:
+
+```bash
+brew install thellimist/tap/tldbot
+```
+
+Install the interactive domain-selection skill into Codex:
+
+```bash
+mkdir -p ~/.codex/skills/tldbot-domain-selector
+curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/SKILL.md \
+  -o ~/.codex/skills/tldbot-domain-selector/SKILL.md
+```
+
+Or append the AGENTS fallback snippet:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/thellimist/tldbot/main/skills/tldbot-domain-selector/references/agents-snippet.md >> AGENTS.md
+```
+
+Then use `tldbot` to find a domain.
+
+The skill is interactive by design:
+- it starts with lots of naming options
+- narrows only after you react
+- uses fast search first on hot TLDs
+- verifies only the shortlist
+- social-checks and buy commands come last
+
 ## What It Is
 
 - local-first CLI
 - stdio MCP server from the same runtime
 - public-infra domain search: RDAP, WHOIS, DNS nameserver fingerprints
 - simple output built for terminals and agent transcripts
+- installable agent skill for interactive domain selection
 
 ## Core Commands
 
 Search default TLDs:
 
 ```bash
-npx -y tldbot@latest search_domain tldscout
+tldbot search_domain tldscout
 ```
 
 Search custom TLDs:
 
 ```bash
-npx -y tldbot@latest search_domain tldscout --tlds com,io,dev,app,co,net,ai,sh,so,bot
+tldbot search_domain tldscout --tlds com,io,dev,app,co,net,ai,sh,so,bot
 ```
 
 Verify hot TLDs explicitly:
 
 ```bash
-npx -y tldbot@latest search_domain tldscout --tlds io,sh,bot --verify
+tldbot search_domain tldscout --tlds io,sh,bot --verify
 ```
 
 Search multiple names:
 
 ```bash
-npx -y tldbot@latest search_domain tldscout namecli domscout --tlds com,io,dev,app,co
+tldbot search_domain tldscout namecli domscout --tlds com,io,dev,app,co
 ```
 
 Check socials:
 
 ```bash
-npx -y tldbot@latest check_socials tldscout
+tldbot check_socials tldscout
 ```
 
 Show buy commands:
 
 ```bash
-npx -y tldbot@latest --buy tldscout.com
+tldbot --buy tldscout.com
 ```
 
 Show buy commands with pricing context:
 
 ```bash
-npx -y tldbot@latest --buy tldscout.com --price
+tldbot --buy tldscout.com --price
 ```
+
+## Interactive Domain Workflow
+
+Use the skill when you want the agent to:
+- generate a lot of options first
+- narrow gradually
+- run fast searches before strict verification
+- only social-check and buy after a shortlist exists
+
+Read the full guide:
+- [domain-selection.md](/Users/kan/Projects/code/domain-search-mcp/docs/domain-selection/domain-selection.md)
 
 ## How Search Works
 
@@ -109,7 +164,7 @@ Expired cache entries are dropped automatically.
 Run as stdio MCP server:
 
 ```bash
-npx -y tldbot@latest
+tldbot
 ```
 
 Claude Code / Cursor style config:
@@ -147,6 +202,9 @@ With a config file:
 - no hosted negative-cache backend
 - no training assets in this repo
 - no Glama / Context7 listing metadata
+- persistent 24h local cache in `~/.tldbot/`
+- installable domain-selection skill
+- Homebrew tap automation
 
 ## Development
 

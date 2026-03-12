@@ -1,0 +1,73 @@
+name: Update Homebrew Tap
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish to Homebrew tap, for example v0.0.1"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  update-tap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "TAG=${{ github.event.inputs.tag }}" >> "$GITHUB_ENV"
+          else
+            echo "TAG=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Download source tarball
+        run: |
+          curl -fsSL -o tldbot.tar.gz "https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${TAG}.tar.gz"
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+          echo "SHA256=$(shasum -a 256 tldbot.tar.gz | awk '{print $1}')" >> "$GITHUB_ENV"
+
+      - name: Checkout tap repo
+        uses: actions/checkout@v4
+        with:
+          repository: thellimist/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Write formula
+        run: |
+          mkdir -p tap/Formula
+          cat > tap/Formula/tldbot.rb <<EOF
+          class Tldbot < Formula
+            desc "CLI-first domain finder for AI agents"
+            homepage "https://github.com/thellimist/tldbot"
+            url "https://github.com/thellimist/tldbot/archive/refs/tags/${TAG}.tar.gz"
+            sha256 "${SHA256}"
+            license "MIT"
+
+            depends_on "node"
+
+            def install
+              system "npm", "install", *std_npm_args
+              bin.install_symlink libexec/"bin/tldbot"
+            end
+
+            test do
+              assert_match "CLI-first domain finder", shell_output("#{bin}/tldbot --help")
+            end
+          end
+          EOF
+
+      - name: Commit and push formula
+        run: |
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/tldbot.rb
+          git diff --cached --quiet && exit 0
+          git commit -m "tldbot ${VERSION}"
+          git push

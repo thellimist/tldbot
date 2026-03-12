@@ -48,6 +48,15 @@ describe('resolveDirectCliSearchCommand', () => {
     expect(result).toBeNull();
   });
 
+  it('parses help flag', () => {
+    const result = resolveDirectCliSearchCommand(['--help']);
+
+    expect(result).toEqual({
+      command: 'help',
+      output: 'table',
+    });
+  });
+
   it('parses check_socials command args', () => {
     const result = resolveDirectCliSearchCommand([
       'check_socials',
